@@ -36,13 +36,13 @@
     --sidebar-border: oklch(0.9067 0 0);
     --sidebar-ring: oklch(0.7695 0.185 154.3834);
     --font-sans:
-        "__ttInterfaces_4703be", ui-sans-serif, system-ui, sans-serif,
+        var(--font-interphases), ui-sans-serif, system-ui, sans-serif,
         "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
         "Noto Color Emoji";
     --font-serif: Georgia, "Times New Roman", Times, serif;
     --font-mono:
-        SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
+        var(--font-interphases-mono), ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --radius: 6px;
     --shadow-x: 0px;
     --shadow-y: 4px;
@@ -101,13 +101,13 @@
     --sidebar-border: oklch(0.3211 0 0);
     --sidebar-ring: oklch(0.7695 0.185 154.3834);
     --font-sans:
-        "__ttInterfaces_4703be", ui-sans-serif, system-ui, sans-serif,
+        var(--font-interphases), ui-sans-serif, system-ui, sans-serif,
         "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
         "Noto Color Emoji";
     --font-serif: Georgia, "Times New Roman", Times, serif;
     --font-mono:
-        SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
+        var(--font-interphases-mono), ui-monospace, SFMono-Regular, Menlo,
+        Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --radius: 6px;
     --shadow-x: 0px;
     --shadow-y: 4px;

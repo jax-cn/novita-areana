@@ -88,13 +88,6 @@ export default function HomePage() {
             </h2>
           </div>
           <div className="flex items-center gap-6">
-            <Button
-              size="default"
-              className="gap-2 font-bold transition-transform hover:scale-105 active:scale-95"
-            >
-              <Plus className="h-5 w-5" />
-              New Battle
-            </Button>
             <div className="h-10 w-10 overflow-hidden rounded-full border border-border bg-muted bg-cover bg-center ring-2 ring-transparent transition-all hover:ring-primary">
               <div className="h-full w-full bg-gradient-to-br from-primary to-accent" />
             </div>

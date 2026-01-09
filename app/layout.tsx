@@ -1,15 +1,44 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const interphases = localFont({
+  src: [
+    {
+      path: "./fonts/TT_Interphases_Pro/TT_Interphases_Pro_Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/TT_Interphases_Pro/TT_Interphases_Pro_Italic.ttf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "./fonts/TT_Interphases_Pro/TT_Interphases_Pro_Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/TT_Interphases_Pro/TT_Interphases_Pro_DemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+  ],
+  variable: "--font-interphases",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const interphasesMono = localFont({
+  src: [
+    {
+      path: "./fonts/TT_Interphases_Pro_Mono/TT_Interphases_Pro_Mono_Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+  variable: "--font-interphases-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${interphases.variable} ${interphasesMono.variable} antialiased`}
       >
         {children}
       </body>
