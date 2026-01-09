@@ -79,17 +79,22 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="flex items-center justify-center text-primary">
               <Bolt className="h-8 w-8" />
             </div>
             <h2 className="text-xl font-bold leading-tight tracking-tight">
-              Battles.ai
+              Novita Arena
             </h2>
-          </div>
+          </Link>
           <div className="flex items-center gap-6">
-            <div className="h-10 w-10 overflow-hidden rounded-full border border-border bg-muted bg-cover bg-center ring-2 ring-transparent transition-all hover:ring-primary">
-              <div className="h-full w-full bg-gradient-to-br from-primary to-accent" />
+            <div className="h-10 w-10 overflow-hidden rounded-full border border-border bg-muted ring-2 ring-transparent transition-all hover:ring-primary cursor-pointer">
+              {/* Mock Avatar Image */}
+              <img 
+                src="https://i.pravatar.cc/150?u=novita" 
+                alt="User" 
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
         </div>
