@@ -1,0 +1,19 @@
+# This is a config for Novita Agent Sandbox template.
+# You can use template ID (vaaqexm8uuwhqmbzz14k) or template name (nextjs-agent-dev) to create a sandbox:
+
+# Python SDK
+# from novita_sandbox.core import Sandbox, AsyncSandbox
+# sandbox = Sandbox.create("nextjs-agent-dev") # Sync sandbox
+# sandbox = await AsyncSandbox.create("nextjs-agent-dev") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'novita-sandbox'
+# const sandbox = await Sandbox.create('nextjs-agent-dev')
+
+team_id = "49030af9-496f-43e0-ba3c-2cfb40629784"
+memory_mb = 4_096
+cpu_count = 2
+start_cmd = "npm run dev"
+dockerfile = "novita.Dockerfile"
+template_name = "nextjs-agent-dev"
+template_id = "vaaqexm8uuwhqmbzz14k"

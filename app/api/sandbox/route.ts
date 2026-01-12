@@ -23,10 +23,18 @@ export async function POST(req: Request) {
   })
 
   if (fragment.has_additional_dependencies) {
-    await sbx.commands.run(fragment.install_dependencies_command)
-    console.log(
-      `Installed dependencies: ${fragment.additional_dependencies.join(', ')} in sandbox ${sbx.sandboxId}`,
-    )
+    try {
+      console.log(`Installing dependencies: ${fragment.install_dependencies_command}`)
+      const result = await sbx.commands.run(fragment.install_dependencies_command)
+      console.log(`Install result:`, result)
+      console.log(
+        `Installed dependencies: ${fragment.additional_dependencies.join(', ')} in sandbox ${sbx.sandboxId}`,
+      )
+    } catch (error: unknown) {
+      console.error(`Failed to install dependencies:`, error)
+      // Continue anyway - some dependencies might already be pre-installed
+      // This allows the sandbox to start even if install fails
+    }
   }
 
   await sbx.files.write(fragment.file_path, fragment.code)

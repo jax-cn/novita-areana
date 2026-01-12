@@ -1,16 +1,16 @@
-import { getModelClient, models } from '@/lib/models'
-import { generateText, LanguageModel } from 'ai'
+import { getModelClientWithDevTools, models } from '@/lib/devtools-model'
+import { generateText } from 'ai'
 
 export async function GET() {
   const model = models[0]
 
   console.log('Testing model:', model)
 
-  const modelClient = getModelClient(model, { model: model.id })
+  const modelClient = getModelClientWithDevTools(model, { model: model.id })
 
   try {
     const result = await generateText({
-      model: modelClient as LanguageModel,
+      model: modelClient,
       prompt: 'Say hello in exactly 3 words.',
     })
 

@@ -1,8 +1,8 @@
-import { getModelClient, LLMModel, LLMModelConfig } from '@/lib/models'
+import { getModelClientWithDevTools, LLMModel, LLMModelConfig } from '@/lib/devtools-model'
 import { toPrompt } from '@/lib/prompt'
 import { fragmentSchema as schema } from '@/lib/schema'
 import templates, { Templates } from '@/lib/templates'
-import { streamObject, LanguageModel, ModelMessage } from 'ai'
+import { streamText, Output, ModelMessage } from 'ai'
 
 export const maxDuration = 300
 
@@ -21,23 +21,18 @@ export async function POST(req: Request) {
     model: model.id,
   }
 
-  const modelClient = getModelClient(model, config)
+  const modelClient = getModelClientWithDevTools(model, config)
 
   try {
-    console.log('Starting streamObject with schema:', JSON.stringify(schema, null, 2))
     console.log('Messages:', JSON.stringify(messages, null, 2))
 
-    const stream = await streamObject({
-      model: modelClient as LanguageModel,
-      schema,
+    const stream = await streamText({
+      model: modelClient,
+      output: Output.object({ schema }),
       system: toPrompt(templates as Templates),
       messages,
+      maxOutputTokens: 32000,
       maxRetries: 0,
-      providerOptions: {
-        openai: {
-          strictJsonSchema: false,
-        },
-      },
     })
 
     return stream.toTextStreamResponse()
