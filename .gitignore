@@ -42,3 +42,7 @@ next-env.d.ts
 
 .claude
 .devtools
+
+sandbox/test-app
+
+__pycache__
