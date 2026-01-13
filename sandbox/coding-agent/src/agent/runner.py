@@ -8,14 +8,21 @@ from asyncio import Queue
 from pathlib import Path
 from typing import AsyncIterator
 
-from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, HookMatcher, AssistantMessage, ResultMessage, TextBlock
+from claude_agent_sdk import (
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    HookMatcher,
+    AssistantMessage,
+    ResultMessage,
+    TextBlock,
+)
 
 from .hooks import AgentHooks
 from ..models.events import AgentEvent, EventType
 
 
 logger = logging.getLogger(__name__)
-SESSIONS_FILE = Path("/data/sessions.json")
+SESSIONS_FILE = Path.home() / ".coding-agent" / "sessions.json"
 
 
 class AgentRunner:
@@ -35,13 +42,19 @@ class AgentRunner:
             "ANTHROPIC_MODEL", "moonshotai/kimi-k2-instruct"
         )
 
-        logger.info(f"🔧 AgentRunner initialized - Workdir: {workdir}, Model: {os.environ.get('ANTHROPIC_MODEL')}")
+        logger.info(
+            f"🔧 AgentRunner initialized - Workdir: {workdir}, Model: {os.environ.get('ANTHROPIC_MODEL')}"
+        )
         logger.debug(f"🔑 API Base URL: {os.environ.get('ANTHROPIC_BASE_URL')}")
-        logger.debug(f"🔑 API Key configured: {bool(os.environ.get('ANTHROPIC_API_KEY'))}")
+        logger.debug(
+            f"🔑 API Key configured: {bool(os.environ.get('ANTHROPIC_API_KEY'))}"
+        )
 
         # Load System Prompt
         self.system_prompt = self._load_system_prompt()
-        logger.debug(f"📝 System prompt loaded (length: {len(self.system_prompt)} chars)")
+        logger.debug(
+            f"📝 System prompt loaded (length: {len(self.system_prompt)} chars)"
+        )
 
     def _load_system_prompt(self) -> str:
         """Load system prompt from file."""
@@ -80,7 +93,9 @@ class AgentRunner:
     async def run(self, user_prompt: str) -> AsyncIterator[AgentEvent]:
         """Run Agent and stream events."""
         start_time = time.time()
-        logger.info(f"🚀 Starting agent run - Prompt: {user_prompt[:100]}{'...' if len(user_prompt) > 100 else ''}")
+        logger.info(
+            f"🚀 Starting agent run - Prompt: {user_prompt[:100]}{'...' if len(user_prompt) > 100 else ''}"
+        )
 
         # Send started event
         event = AgentEvent(
@@ -110,12 +125,18 @@ class AgentRunner:
             permission_mode="acceptEdits",
             max_turns=20,
             hooks={
-                "PreToolUse": [HookMatcher(matcher=None, hooks=[hooks.on_pre_tool_use])],
-                "PostToolUse": [HookMatcher(matcher=None, hooks=[hooks.on_post_tool_use])],
+                "PreToolUse": [
+                    HookMatcher(matcher=None, hooks=[hooks.on_pre_tool_use])
+                ],
+                "PostToolUse": [
+                    HookMatcher(matcher=None, hooks=[hooks.on_post_tool_use])
+                ],
             },
         )
 
-        logger.info(f"📋 Agent configured - Max turns: 20, Allowed tools: Read, Write, Bash")
+        logger.info(
+            f"📋 Agent configured - Max turns: 20, Allowed tools: Read, Write, Bash"
+        )
 
         try:
             logger.debug("🔌 Connecting to Claude Agent SDK...")
@@ -149,7 +170,10 @@ class AgentRunner:
                 logger.info(f"📬 Total messages received: {response_count}")
 
         except Exception as e:
-            logger.error(f"💥 Agent execution failed: {type(e).__name__}: {str(e)}", exc_info=True)
+            logger.error(
+                f"💥 Agent execution failed: {type(e).__name__}: {str(e)}",
+                exc_info=True,
+            )
             # Send error event
             await hooks.on_error(e)
             event = AgentEvent(
