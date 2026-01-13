@@ -129,6 +129,8 @@ Generate code with Claude Agent via SSE streaming.
 
 **Response (SSE Stream):**
 
+Events are streamed in real-time as Server-Sent Events (SSE):
+
 ```
 data: {"type":"started","timestamp":1234567890.0,"data":{"model":"...","prompt":"..."}}
 data: {"type":"tool_start","timestamp":1234567891.0,"data":{"tool":"Read","args":{...}}}
@@ -137,6 +139,12 @@ data: {"type":"tool_end","timestamp":1234567893.0,"data":{"tool":"Read","duratio
 data: {"type":"output","timestamp":1234567894.0,"data":{"content":"..."}}
 data: {"type":"completed","timestamp":1234567895.0,"data":{"success":true,"total_duration_ms":5000}}
 ```
+
+**SSE Headers:**
+- `Content-Type: text/event-stream`
+- `Cache-Control: no-cache`
+- `Connection: keep-alive`
+- `X-Accel-Buffering: no` (prevents nginx buffering)
 
 ## Event Types
 
@@ -170,32 +178,84 @@ uv run ruff format src/
 
 ### Testing Endpoints
 
-```bash
-# Health check
-curl http://localhost:8000/health
+#### Health Check
 
-# Generate with SSE (requires valid API key)
+```bash
+curl http://localhost:8000/health
+```
+
+#### Testing SSE Streaming
+
+**Option 1: Simple curl (shows raw events)**
+
+```bash
 curl -N http://localhost:8000/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Add hello world", "workdir": "/project"}'
 ```
 
+The `-N` flag disables output buffering, showing events in real-time.
+
+**Option 2: Using xh (HTTPie alternative)**
+
+```bash
+xh post http://localhost:8000/generate \
+  prompt="Add hello world" \
+  workdir=/project \
+  --stream
+```
+
+**Option 3: Formatted event viewer (with jq)**
+
+```bash
+curl -N http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Add hello world", "workdir": "/project"}' | \
+  while IFS= read -r line; do
+    if [[ "$line" == data:* ]]; then
+      echo "$line" | sed 's/^data: //' | jq -C '{type: .type, timestamp: (.timestamp | strftime("%H:%M:%S")), data: .data}' 2>/dev/null
+    fi
+  done
+```
+
+**Option 4: With xh and formatted output**
+
+```bash
+xh post http://localhost:8000/generate \
+  prompt="Create a test file" \
+  workdir=/tmp/coding-agent-test/test-app \
+  --stream | grep --line-buffered "^data:" | \
+  while IFS= read -r line; do
+    echo "$line" | sed 's/^data: //' | jq -C '{type: .type, timestamp: (.timestamp | strftime("%H:%M:%S")), data: .data}' 2>/dev/null
+  done
+```
+
+> **Note:** Some web-based API clients (e.g., Hoppscotch, Postman) may buffer SSE responses and not show real-time streaming. Use CLI tools like curl or xh to verify real-time behavior.
+
 ## Architecture
 
 - **FastAPI Server**: HTTP endpoints for health and code generation
 - **Claude Agent SDK**: Core AI agent with tool capabilities
-- **SSE Streaming**: Real-time event streaming to frontend
-- **Session Management**: Persistent sessions via `/data/sessions.json`
-- **Event Hooks**: Tool use, file operations, errors
+- **SSE Streaming**: Real-time event streaming to frontend via Server-Sent Events
+- **Event System**: Hook-based event capture for tool usage, file operations, and agent lifecycle
+- **asyncio.Queue**: Non-blocking event passing between hooks and runner
 - **Novita API**: Anthropic-compatible API endpoint
+
+### Event Flow
+
+1. **PreToolUse Hook**: Captures tool start → puts event in queue
+2. **Tool Execution**: Agent runs tool (Read/Write/Bash)
+3. **PostToolUse Hook**: Captures tool result → puts event in queue
+4. **Runner**: Drains queue and yields events via SSE to client
+5. **Client**: Receives real-time events showing agent activity
 
 ## Next Steps
 
 1. Set `ANTHROPIC_AUTH_TOKEN` with valid Novita API key
-2. Test `/generate` endpoint with sandbox/test-app directory
-3. Integrate with Next.js frontend for real-time event visualization
-4. Add specialized tools (lint, build, serve)
-5. Deploy to Novita Sandbox for production
+2. Test `/generate` endpoint with a test directory
+3. Integrate with frontend for real-time event visualization
+4. Extend allowed tools for specialized workflows (lint, build, serve)
+5. Deploy to production environment
 
 ## License
 

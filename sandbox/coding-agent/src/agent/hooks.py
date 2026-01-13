@@ -16,7 +16,7 @@ class AgentHooks:
     def __init__(self, event_queue):
         self.event_queue = event_queue
         self.tool_start_time: dict[str, float] = {}
-        logger.debug("🪝 AgentHooks initialized")
+        logger.debug("AgentHooks initialized")
 
     async def on_pre_tool_use(
         self,
@@ -25,33 +25,19 @@ class AgentHooks:
         context: HookContext,
     ) -> HookJSONOutput:
         """Hook called before tool execution."""
-        # Safely extract data from HookInput
-        tool_name = (
-            input_data.get("tool_name", "unknown")
-            if isinstance(input_data, dict)
-            else "unknown"
-        )
-        tool_input = (
-            input_data.get("tool_input", {}) if isinstance(input_data, dict) else {}
-        )
+        tool_name = self._extract_tool_name(input_data)
+        tool_input = self._extract_tool_input(input_data)
 
-        logger.debug(f"🔨 Pre-tool use: {tool_name}")
-
-        # Track start time
+        logger.debug(f"Pre-tool use: {tool_name}")
         self.tool_start_time[tool_name] = time.time()
 
-        # Create event
         event = AgentEvent(
             type=EventType.TOOL_START,
             timestamp=time.time(),
-            data={
-                "tool": tool_name,
-                "args": tool_input,
-            },
+            data={"tool": tool_name, "args": tool_input},
         )
         await self.event_queue.put(event)
 
-        # Allow execution
         return {}
 
     async def on_post_tool_use(
@@ -61,74 +47,86 @@ class AgentHooks:
         context: HookContext,
     ) -> HookJSONOutput:
         """Hook called after tool execution."""
-        # Safely extract data from HookInput
-        tool_name = (
-            input_data.get("tool_name", "unknown")
-            if isinstance(input_data, dict)
-            else "unknown"
-        )
-        tool_input = (
-            input_data.get("tool_input", {}) if isinstance(input_data, dict) else {}
-        )
-        tool_response = (
-            input_data.get("tool_response") if isinstance(input_data, dict) else None
-        )
+        tool_name = self._extract_tool_name(input_data)
+        tool_input = self._extract_tool_input(input_data)
+        tool_response = self._extract_tool_response(input_data)
 
-        start_time = self.tool_start_time.get(tool_name, time.time())
-        duration = time.time() - start_time
+        duration = time.time() - self.tool_start_time.get(tool_name, time.time())
+        logger.debug(f"Post-tool use: {tool_name} (took {duration:.3f}s)")
 
-        logger.debug(f"✅ Post-tool use: {tool_name} (took {duration:.3f}s)")
-
-        # Handle file operations specially
-        if tool_name in ("Read", "Write"):
-            file_path = tool_input.get("file_path") or tool_input.get("path")
-
-            if tool_name == "Read":
-                logger.info(f"📄 Read file: {file_path}")
-                event = AgentEvent(
-                    type=EventType.FILE_READ,
-                    timestamp=time.time(),
-                    data={"path": file_path},
-                )
-            else:
-                # Write
-                content = tool_input.get("content", "")
-                logger.info(f"✏️  Write file: {file_path} ({len(content)} chars)")
-                event = AgentEvent(
-                    type=EventType.FILE_WRITE,
-                    timestamp=time.time(),
-                    data={"path": file_path, "size": len(content)},
-                )
-        else:
-            # Generic tool end
-            has_error = tool_response and "error" in str(tool_response).lower()
-            if has_error:
-                logger.warning(f"⚠️ Tool {tool_name} failed: {tool_response}")
-            else:
-                logger.debug(f"🔧 Tool {tool_name} succeeded")
-
-            event = AgentEvent(
-                type=EventType.TOOL_ERROR if has_error else EventType.TOOL_END,
-                timestamp=time.time(),
-                data={
-                    "tool": tool_name,
-                    "duration_ms": duration * 1000,
-                    "success": not has_error,
-                },
-            )
-
+        event = self._create_tool_event(tool_name, tool_input, tool_response, duration)
         await self.event_queue.put(event)
+
         return {}
 
-    async def on_error(self, error: Exception):
+    async def on_error(self, error: Exception) -> None:
         """Hook called when an error occurs."""
-        logger.error(f"❌ Hook error: {type(error).__name__}: {str(error)}")
+        logger.error(f"Hooks error: {type(error).__name__}: {str(error)}")
+
         event = AgentEvent(
             type=EventType.ERROR,
             timestamp=time.time(),
-            data={
-                "message": str(error),
-                "type": type(error).__name__,
-            },
+            data={"message": str(error), "type": type(error).__name__},
         )
         await self.event_queue.put(event)
+
+    def _extract_tool_name(self, input_data: HookInput) -> str:
+        """Safely extract tool name from HookInput."""
+        if isinstance(input_data, dict):
+            return input_data.get("tool_name", "unknown")
+        return "unknown"
+
+    def _extract_tool_input(self, input_data: HookInput) -> dict:
+        """Safely extract tool input from HookInput."""
+        if isinstance(input_data, dict):
+            return input_data.get("tool_input", {})
+        return {}
+
+    def _extract_tool_response(self, input_data: HookInput) -> str | None:
+        """Safely extract tool response from HookInput."""
+        if isinstance(input_data, dict):
+            return input_data.get("tool_response")
+        return None
+
+    def _create_tool_event(
+        self,
+        tool_name: str,
+        tool_input: dict,
+        tool_response: str | None,
+        duration: float,
+    ) -> AgentEvent:
+        """Create appropriate event based on tool type and result."""
+        if tool_name == "Read":
+            file_path = tool_input.get("file_path") or tool_input.get("path")
+            logger.info(f"Read file: {file_path}")
+            return AgentEvent(
+                type=EventType.FILE_READ,
+                timestamp=time.time(),
+                data={"path": file_path},
+            )
+
+        if tool_name == "Write":
+            file_path = tool_input.get("file_path") or tool_input.get("path")
+            content = tool_input.get("content", "")
+            logger.info(f"Write file: {file_path} ({len(content)} chars)")
+            return AgentEvent(
+                type=EventType.FILE_WRITE,
+                timestamp=time.time(),
+                data={"path": file_path, "size": len(content)},
+            )
+
+        has_error = tool_response and "error" in str(tool_response).lower()
+        if has_error:
+            logger.warning(f"Tool {tool_name} failed: {tool_response}")
+        else:
+            logger.debug(f"Tool {tool_name} succeeded")
+
+        return AgentEvent(
+            type=EventType.TOOL_ERROR if has_error else EventType.TOOL_END,
+            timestamp=time.time(),
+            data={
+                "tool": tool_name,
+                "duration_ms": duration * 1000,
+                "success": not has_error,
+            },
+        )
