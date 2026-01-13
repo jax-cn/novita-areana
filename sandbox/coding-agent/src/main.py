@@ -1,6 +1,5 @@
 """FastAPI server for Coding Agent with SSE streaming."""
 
-import asyncio
 import logging
 import os
 import time
@@ -16,8 +15,8 @@ from pydantic import BaseModel
 from src.agent.runner import AgentRunner
 from src.models.events import AgentEvent, EventType
 
-# Load environment variables from .env
-load_dotenv()
+# Load environment variables from .env (override system env vars)
+load_dotenv(override=True)
 
 # Configure logging
 logging.basicConfig(
@@ -157,6 +156,22 @@ async def generate(req: GenerateRequest):
 
 
 if __name__ == "__main__":
+    import socket
     import uvicorn
+    import sys
+
+    # Check if port 8000 is already in use
+    def is_port_in_use(port: int) -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(("localhost", port)) == 0
+
+    if is_port_in_use(8000):
+        logger.error(
+            "❌ Port 8000 is already in use. Please free the port or use a different port."
+        )
+        logger.error(
+            "💡 Tip: Run 'lsof -ti:8000 | xargs kill -9' to kill the process using port 8000"
+        )
+        sys.exit(1)
 
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

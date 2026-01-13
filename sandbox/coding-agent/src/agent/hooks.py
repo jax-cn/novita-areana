@@ -26,8 +26,14 @@ class AgentHooks:
     ) -> HookJSONOutput:
         """Hook called before tool execution."""
         # Safely extract data from HookInput
-        tool_name = input_data.get("tool_name", "unknown") if isinstance(input_data, dict) else "unknown"
-        tool_input = input_data.get("tool_input", {}) if isinstance(input_data, dict) else {}
+        tool_name = (
+            input_data.get("tool_name", "unknown")
+            if isinstance(input_data, dict)
+            else "unknown"
+        )
+        tool_input = (
+            input_data.get("tool_input", {}) if isinstance(input_data, dict) else {}
+        )
 
         logger.debug(f"🔨 Pre-tool use: {tool_name}")
 
@@ -56,9 +62,17 @@ class AgentHooks:
     ) -> HookJSONOutput:
         """Hook called after tool execution."""
         # Safely extract data from HookInput
-        tool_name = input_data.get("tool_name", "unknown") if isinstance(input_data, dict) else "unknown"
-        tool_input = input_data.get("tool_input", {}) if isinstance(input_data, dict) else {}
-        tool_response = input_data.get("tool_response") if isinstance(input_data, dict) else None
+        tool_name = (
+            input_data.get("tool_name", "unknown")
+            if isinstance(input_data, dict)
+            else "unknown"
+        )
+        tool_input = (
+            input_data.get("tool_input", {}) if isinstance(input_data, dict) else {}
+        )
+        tool_response = (
+            input_data.get("tool_response") if isinstance(input_data, dict) else None
+        )
 
         start_time = self.tool_start_time.get(tool_name, time.time())
         duration = time.time() - start_time

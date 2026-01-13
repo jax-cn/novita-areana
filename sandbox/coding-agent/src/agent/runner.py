@@ -1,6 +1,6 @@
 """Claude Agent runner for executing coding tasks."""
 
-import json
+import asyncio
 import logging
 import os
 import time
@@ -13,7 +13,6 @@ from claude_agent_sdk import (
     ClaudeSDKClient,
     HookMatcher,
     AssistantMessage,
-    ResultMessage,
     TextBlock,
 )
 
@@ -22,7 +21,6 @@ from ..models.events import AgentEvent, EventType
 
 
 logger = logging.getLogger(__name__)
-SESSIONS_FILE = Path.home() / ".coding-agent" / "sessions.json"
 
 
 class AgentRunner:
@@ -31,7 +29,6 @@ class AgentRunner:
     def __init__(self, workdir: str, event_queue: Queue):
         self.workdir = workdir
         self.event_queue = event_queue
-        self.session_file = SESSIONS_FILE
 
         # Configure Novita API
         os.environ["ANTHROPIC_BASE_URL"] = os.environ.get(
@@ -61,36 +58,9 @@ class AgentRunner:
         prompt_file = Path(__file__).parent / "prompts" / "system_prompt.txt"
         return prompt_file.read_text()
 
-    def _load_session_id(self) -> str | None:
-        """Load existing Session ID from file."""
-        if not self.session_file.exists():
-            logger.debug("💾 No existing session file found")
-            return None
-        try:
-            sessions = json.loads(self.session_file.read_text())
-            session_id = sessions.get("default")
-            if session_id:
-                logger.info(f"📂 Loaded existing session: {session_id}")
-            return session_id
-        except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"⚠️ Failed to load session file: {e}")
-            return None
-
-    def _save_session_id(self, session_id: str):
-        """Save Session ID to file."""
-        sessions = {}
-        if self.session_file.exists():
-            try:
-                sessions = json.loads(self.session_file.read_text())
-            except (json.JSONDecodeError, IOError) as e:
-                logger.warning(f"⚠️ Failed to read existing sessions: {e}")
-
-        sessions["default"] = session_id
-        self.session_file.parent.mkdir(parents=True, exist_ok=True)
-        self.session_file.write_text(json.dumps(sessions, indent=2))
-        logger.info(f"💾 Saved session ID: {session_id}")
-
-    async def run(self, user_prompt: str) -> AsyncIterator[AgentEvent]:
+    async def run(
+        self, user_prompt: str, timeout_seconds: int = 300
+    ) -> AsyncIterator[AgentEvent]:
         """Run Agent and stream events."""
         start_time = time.time()
         logger.info(
@@ -105,6 +75,7 @@ class AgentRunner:
                 "model": os.environ.get("ANTHROPIC_MODEL", "unknown"),
                 "prompt": user_prompt,
                 "workdir": self.workdir,
+                "timeout": timeout_seconds,
             },
         )
         yield event
@@ -112,12 +83,9 @@ class AgentRunner:
         # Create hooks
         hooks = AgentHooks(self.event_queue)
 
-        # Load session
-        session_id = self._load_session_id()
-
-        # Configure Claude Agent
+        # Configure Claude Agent (no session persistence - each run is fresh)
         options = ClaudeAgentOptions(
-            resume=session_id,
+            resume=None,  # Always start fresh, don't persist sessions
             system_prompt=self.system_prompt,
             cwd=self.workdir,
             setting_sources=["project"],
@@ -135,40 +103,56 @@ class AgentRunner:
         )
 
         logger.info(
-            f"📋 Agent configured - Max turns: 20, Allowed tools: Read, Write, Bash"
+            f"📋 Agent configured - Max turns: 20, Allowed tools: Read, Write, Bash, Timeout: {timeout_seconds}s"
         )
 
         try:
             logger.debug("🔌 Connecting to Claude Agent SDK...")
-            async with ClaudeSDKClient(options=options) as client:
-                # Send user prompt
-                logger.debug("📤 Sending user prompt to agent")
-                await client.query(user_prompt)
+            async with asyncio.timeout(timeout_seconds):
+                async with ClaudeSDKClient(options=options) as client:
+                    # Send user prompt
+                    logger.debug("📤 Sending user prompt to agent")
+                    await client.query(user_prompt)
 
-                # Receive response
-                logger.debug("📥 Receiving agent response...")
-                response_count = 0
-                async for msg in client.receive_response():
-                    response_count += 1
-                    if response_count % 5 == 0:
-                        logger.debug(f"📬 Received {response_count} messages so far...")
+                    # Receive response
+                    logger.debug("📥 Receiving agent response...")
+                    response_count = 0
+                    async for msg in client.receive_response():
+                        response_count += 1
+                        if response_count % 5 == 0:
+                            logger.debug(
+                                f"📬 Received {response_count} messages so far..."
+                            )
 
-                    if isinstance(msg, ResultMessage) and hasattr(msg, "session_id"):
-                        self._save_session_id(msg.session_id)
+                        # Don't save session ID - sessions are not persisted
 
-                    if isinstance(msg, AssistantMessage):
-                        for block in msg.content:
-                            if isinstance(block, TextBlock) and block.text:
-                                event = AgentEvent(
-                                    type=EventType.OUTPUT,
-                                    timestamp=time.time(),
-                                    data={"content": block.text},
-                                )
-                                yield event
-                                logger.debug(f"💬 Text output: {len(block.text)} chars")
+                        if isinstance(msg, AssistantMessage):
+                            for block in msg.content:
+                                if isinstance(block, TextBlock) and block.text:
+                                    event = AgentEvent(
+                                        type=EventType.OUTPUT,
+                                        timestamp=time.time(),
+                                        data={"content": block.text},
+                                    )
+                                    yield event
+                                    logger.debug(
+                                        f"💬 Text output: {len(block.text)} chars"
+                                    )
 
-                logger.info(f"📬 Total messages received: {response_count}")
+                    logger.info(f"📬 Total messages received: {response_count}")
 
+        except TimeoutError:
+            logger.error(f"⏰ Agent execution timed out after {timeout_seconds}s")
+            event = AgentEvent(
+                type=EventType.ERROR,
+                timestamp=time.time(),
+                data={
+                    "message": f"Agent execution timed out after {timeout_seconds}s",
+                    "type": "TimeoutError",
+                },
+            )
+            yield event
+            raise
         except Exception as e:
             logger.error(
                 f"💥 Agent execution failed: {type(e).__name__}: {str(e)}",
