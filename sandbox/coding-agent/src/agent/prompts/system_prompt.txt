@@ -109,43 +109,32 @@ The following packages are ALREADY INSTALLED and ready to use:
 - **shadcn/ui**: All components are in `components/ui/`
 - **lucide-react**: Icon library - `import { IconName } from 'lucide-react'`
 - **tailwindcss**: Version 4.x with OKLCH color space
-- **@radix-ui/react-***: Radix UI primitives (accordion, dialog, dropdown, etc.)
 
 ### 3D & Animation
 - **three**: 3D rendering - `import * as THREE from 'three'`
 - **@react-three/fiber**: React renderer for Three.js
 - **@react-three/drei**: Useful helpers for React Three Fiber
 - **@react-three/postprocessing**: Post-processing effects for React Three Fiber
-- **framer-motion**: Animation library - `import { motion } from 'framer-motion'`
-- **framer-motion-3d**: 3D animation extensions for framer-motion
+- **motion**: Animation library (part of framer-motion) - `import { motion } from 'motion'`
 
 ### Physics Engines
 - **@react-three/rapier**: 3D physics engine (React wrapper for Rapier)
-- **cannon-es**: 3D physics engine - `import * as CANNON from 'cannon-es'`
-- **@react-three/cannon**: React wrapper for cannon-es
 - **matter-js**: 2D physics engine for web
-- **planck-js**: 2D physics engine (Box2D port)
-- **react-physics-fiber**: React integration for physics engines
+
+### Type Definitions
+- **@types/three**: TypeScript types for Three.js
 
 ### Forms & Data
 - **react-hook-form**: Form handling
-- **zod**: Schema validation
-- **@hookform/resolvers**: Form validation with Zod
-- **react-hook-form-persist**: Form state persistence
 
 ### Utilities
-- **next-themes**: Dark mode support
 - **recharts**: Charts and graphs
 - **date-fns**: Date manipulation
 - **clsx** and **tailwind-merge**: For `cn()` utility
-- **immer**: Immutable state management
+- **react-is**: React utilities for type checking
 - **axios**: HTTP client
 - **zustand**: Lightweight state management
-
-### React Core
-- **react**: React library
-- **react-dom**: React DOM renderer
-- **@types/react**: TypeScript types for React
+- **swr**: Data fetching library
 
 **DO NOT install these packages** - they are already available. Use them directly in your code.
 

@@ -49,43 +49,6 @@ uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
 Server starts at: `http://localhost:8000`
 
-## Logging
-
-The server includes comprehensive logging for debugging and monitoring:
-
-### Log Levels
-
-- **INFO**: Server lifecycle, request/response, key events (tools, file ops)
-- **DEBUG**: Detailed execution flow, message counts, internal states
-- **WARNING**: Non-critical issues (e.g., session file read errors)
-- **ERROR**: Failed operations, tool errors, exceptions
-
-### Log Format
-
-```
-YYYY-MM-DD HH:MM:SS - module_name - LEVEL - message
-```
-
-### Example Logs
-
-```
-2026-01-12 21:27:00 - src.main - INFO - 🚀 Coding Agent Server starting...
-2026-01-12 21:27:00 - src.main - INFO - 📝 Configuration - Model: deepseek/deepseek-v3.2
-2026-01-12 21:27:05 - src.main - INFO - 📥 Received /generate request - Workdir: /project, Prompt: Add hello world...
-2026-01-12 21:27:05 - src.agent.runner - INFO - 🚀 Starting agent run - Prompt: Add hello world...
-2026-01-12 21:27:05 - src.agent.runner - INFO - 📋 Agent configured - Max turns: 20, Allowed tools: Read, Write, Bash
-2026-01-12 21:27:06 - src.agent.hooks - INFO - 📄 Read file: /project/package.json
-2026-01-12 21:27:06 - src.main - INFO - 🔧 Tool started: Read
-2026-01-12 21:27:06 - src.main - INFO - ✅ Tool ended: Read - Duration: 45ms
-2026-01-12 21:27:10 - src.main - INFO - ✅ Agent completed - Success: True, Duration: 5234ms, Events: 15
-```
-
-### Log Locations
-
-- **`src/main.py`**: HTTP requests, SSE events, errors
-- **`src/agent/runner.py`**: Agent lifecycle, SDK interactions, session management
-- **`src/agent/hooks.py`**: Tool execution, file operations
-
 ## API Endpoints
 
 ### GET /
@@ -186,40 +149,6 @@ curl http://localhost:8000/health
 
 #### Testing SSE Streaming
 
-**Option 1: Simple curl (shows raw events)**
-
-```bash
-curl -N http://localhost:8000/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Add hello world", "workdir": "/project"}'
-```
-
-The `-N` flag disables output buffering, showing events in real-time.
-
-**Option 2: Using xh (HTTPie alternative)**
-
-```bash
-xh post http://localhost:8000/generate \
-  prompt="Add hello world" \
-  workdir=/project \
-  --stream
-```
-
-**Option 3: Formatted event viewer (with jq)**
-
-```bash
-curl -N http://localhost:8000/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Add hello world", "workdir": "/project"}' | \
-  while IFS= read -r line; do
-    if [[ "$line" == data:* ]]; then
-      echo "$line" | sed 's/^data: //' | jq -C '{type: .type, timestamp: (.timestamp | strftime("%H:%M:%S")), data: .data}' 2>/dev/null
-    fi
-  done
-```
-
-**Option 4: With xh and formatted output**
-
 ```bash
 xh post http://localhost:8000/generate \
   prompt="Create a test file" \
@@ -229,8 +158,6 @@ xh post http://localhost:8000/generate \
     echo "$line" | sed 's/^data: //' | jq -C '{type: .type, timestamp: (.timestamp | strftime("%H:%M:%S")), data: .data}' 2>/dev/null
   done
 ```
-
-> **Note:** Some web-based API clients (e.g., Hoppscotch, Postman) may buffer SSE responses and not show real-time streaming. Use CLI tools like curl or xh to verify real-time behavior.
 
 ## Architecture
 
