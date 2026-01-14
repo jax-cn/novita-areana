@@ -62,7 +62,7 @@ class AgentRunner:
         return prompt_file.read_text()
 
     async def run(
-        self, user_prompt: str, timeout_seconds: int = 300
+        self, user_prompt: str
     ) -> AsyncIterator[AgentEvent]:
         """Run Agent and stream events."""
         start_time = time.time()
@@ -70,12 +70,10 @@ class AgentRunner:
 
         logger.info(f"Starting agent run - Prompt: {prompt_preview}")
 
-        yield self._create_started_event(user_prompt, timeout_seconds)
+        yield self._create_started_event(user_prompt)
 
         hooks = AgentHooks(self.event_queue, self.workdir)
         options = self._create_agent_options(hooks)
-
-        logger.info(f"Agent configured - Max turns: 50")
 
         try:
             async with ClaudeSDKClient(options=options) as client:
@@ -120,7 +118,7 @@ class AgentRunner:
             return prompt
         return f"{prompt[:max_length]}..."
 
-    def _create_started_event(self, user_prompt: str, timeout: int | None = None) -> AgentEvent:
+    def _create_started_event(self, user_prompt: str) -> AgentEvent:
         """Create the initial started event."""
         return AgentEvent(
             type=EventType.STARTED,
@@ -148,7 +146,6 @@ class AgentRunner:
                 "Grep",
             ],
             permission_mode="bypassPermissions",
-            max_turns=50,
             hooks={
                 "PreToolUse": [HookMatcher(matcher=None, hooks=[hooks.on_pre_tool_use])],
                 "PostToolUse": [HookMatcher(matcher=None, hooks=[hooks.on_post_tool_use])],

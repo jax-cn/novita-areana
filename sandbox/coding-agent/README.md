@@ -150,13 +150,27 @@ curl http://localhost:8000/health
 #### Testing SSE Streaming
 
 ```bash
-xh post http://localhost:8000/generate \
-  prompt="Create a test file" \
-  workdir=/tmp/coding-agent-test/test-app \
-  --stream | grep --line-buffered "^data:" | \
-  while IFS= read -r line; do
-    echo "$line" | sed 's/^data: //' | jq -C '{type: .type, timestamp: (.timestamp | strftime("%H:%M:%S")), data: .data}' 2>/dev/null
-  done
+http --ignore-stdin --stream --body POST http://localhost:8000/generate \
+    prompt="Create a todo app" \
+    workdir=/home/user/app | \
+    grep --line-buffered "^data:" | \
+    while IFS= read -r line; do
+      echo "$line" | sed 's/^data: //' | jq -C 2>/dev/null || echo "$line"
+    done
+```
+
+* Other prompts to test: Create a 3D simulation of a formula 1 car performing a continuous drifting donut in the street
+
+#### Docker
+
+```bash
+docker build -f sandbox/novita.Dockerfile -t novita-sandbox:test .
+```
+
+```bash
+docker run --rm -d --name test-coding-agent -p 8000:8000 -p 3000:3000 \
+    --env-file sandbox/coding-agent/.env \
+    novita-sandbox:test
 ```
 
 ## Architecture

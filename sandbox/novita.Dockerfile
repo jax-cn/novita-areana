@@ -10,9 +10,15 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (fast Python package manager)
+# Install uv (fast Python package manager) globally
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+RUN mv /root/.local/bin/uv /usr/local/bin/uv
+
+# Create non-root user for running the coding agent
+# Claude CLI cannot run as root with --dangerously-skip-permissions
+RUN useradd -m -s /bin/bash user && \
+    mkdir -p /home/user/.local/bin && \
+    chown -R user:user /home/user
 
 # Set working directory for the Next.js project
 WORKDIR /home/user/app
@@ -30,9 +36,31 @@ RUN printf "n\n" | npx create-next-app@latest . \
 
 # Install essential npm packages (simplified list)
 
-# Icons
+# Core utilities (used by many packages)
 RUN npm install --quiet --no-audit --no-fund \
-    lucide-react
+    clsx \
+    tailwind-merge \
+    react-is
+
+# UI components
+RUN npm install --quiet --no-audit --no-fund \
+    lucide-react \
+    react-resizable-panels
+
+# Forms & validation
+RUN npm install --quiet --no-audit --no-fund \
+    react-hook-form
+
+# Data fetching & state
+RUN npm install --quiet --no-audit --no-fund \
+    axios \
+    zustand \
+    swr
+
+# Data visualization
+RUN npm install --quiet --no-audit --no-fund \
+    recharts \
+    date-fns
 
 # 3D & Animation
 RUN npm install --quiet --no-audit --no-fund \
@@ -42,29 +70,15 @@ RUN npm install --quiet --no-audit --no-fund \
     @react-three/postprocessing \
     motion
 
-# Physics Engines
+# Physics engines
 RUN npm install --quiet --no-audit --no-fund \
     @react-three/rapier \
     matter-js
 
-# Type Definitions
+# Type definitions
 RUN npm install --quiet --no-audit --no-fund \
-    @types/three
-
-# Forms & Data
-RUN npm install --quiet --no-audit --no-fund \
-    react-hook-form
-
-# Utilities & Data Fetching
-RUN npm install --quiet --no-audit --no-fund \
-    recharts \
-    react-is \
-    date-fns \
-    clsx \
-    tailwind-merge \
-    axios \
-    zustand \
-    swr
+    @types/three \
+    @types/react-resizable-panels
 
 # Initialize shadcn with all components for rich UI
 RUN npx shadcn@latest init -d -y
@@ -76,10 +90,19 @@ WORKDIR /home/user/coding-agent
 # Copy coding agent files
 COPY sandbox/coding-agent/pyproject.toml sandbox/coding-agent/uv.lock ./
 
-# Install Python dependencies using uv (only core coding agent dependencies)
-RUN uv sync
+# Install Claude CLI globally (required by claude-agent-sdk)
+RUN npm install -g @anthropic-ai/claude-code
 
 COPY sandbox/coding-agent/src ./src
+
+# Set ownership of all files to the non-root user
+RUN chown -R user:user /home/user
+
+# Switch to non-root user
+USER user
+
+# Install Python dependencies using uv (must run as non-root user)
+RUN uv sync
 
 # Set final working directory for Next.js app
 WORKDIR /home/user/app
