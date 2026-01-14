@@ -161,7 +161,7 @@ http --ignore-stdin --stream --body POST http://localhost:8000/generate \
 
 * Other prompts to test: Create a 3D simulation of a formula 1 car performing a continuous drifting donut in the street
 
-#### Docker
+#### Test in Docker
 
 ```bash
 docker build -f sandbox/novita.Dockerfile -t novita-sandbox:test .
@@ -171,6 +171,12 @@ docker build -f sandbox/novita.Dockerfile -t novita-sandbox:test .
 docker run --rm -d --name test-coding-agent -p 8000:8000 -p 3000:3000 \
     --env-file sandbox/coding-agent/.env \
     novita-sandbox:test
+```
+
+#### Build to sandbox
+
+```bash
+novita-sandbox-cli template build -c "uv run --directory /home/user/coding-agent uvicorn src.main:app --host 0.0.0.0 --port 8000" -n coding-agent-nextjs --cpu-count 2 --memory-mb 1024
 ```
 
 ## Architecture

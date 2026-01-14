@@ -77,8 +77,7 @@ RUN npm install --quiet --no-audit --no-fund \
 
 # Type definitions
 RUN npm install --quiet --no-audit --no-fund \
-    @types/three \
-    @types/react-resizable-panels
+    @types/three
 
 # Initialize shadcn with all components for rich UI
 RUN npx shadcn@latest init -d -y
@@ -88,12 +87,12 @@ RUN npx shadcn@latest add --all -y
 WORKDIR /home/user/coding-agent
 
 # Copy coding agent files
-COPY sandbox/coding-agent/pyproject.toml sandbox/coding-agent/uv.lock ./
+COPY coding-agent/pyproject.toml coding-agent/uv.lock ./
 
 # Install Claude CLI globally (required by claude-agent-sdk)
 RUN npm install -g @anthropic-ai/claude-code
 
-COPY sandbox/coding-agent/src ./src
+COPY coding-agent/src ./src
 
 # Set ownership of all files to the non-root user
 RUN chown -R user:user /home/user
