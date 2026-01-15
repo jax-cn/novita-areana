@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,6 +28,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { models, LLMModel } from '@/lib/models'
 import { useSandboxAgent } from '@/hooks/use-sandbox-agent'
+import { useScreenRecorder } from '@/hooks/use-screen-recorder'
 
 export default function PlaygroundPage() {
   const [viewMode, setViewMode] = useState<'a' | 'b' | 'split'>('split')
@@ -35,14 +36,33 @@ export default function PlaygroundPage() {
     'Make a mobile ordering app for a coffee shop with a modern minimal white design.'
   )
   const [showInputBar, setShowInputBar] = useState(true)
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingTime, setRecordingTime] = useState(0)
 
   const [selectedModelA, setSelectedModelA] = useState<LLMModel>(models[0])
   const [selectedModelB, setSelectedModelB] = useState<LLMModel>(models[1])
 
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareMode, setShareMode] = useState<'video' | 'poster'>('poster')
+  const [recordedFormat, setRecordedFormat] = useState<'webm' | 'mp4' | null>(null)
+
+  // Use screen recorder hook
+  const {
+    isRecording,
+    recordingTime,
+    recordedBlob,
+    previewContainerRef,
+    startRecording,
+    stopRecording,
+  } = useScreenRecorder({
+    onRecordingComplete: (blob, format) => {
+      console.log('Recording complete:', { blob, format })
+      setRecordedFormat(format)
+      setShareMode('video')
+      setTimeout(() => setShowShareModal(true), 300)
+    },
+    onError: (error) => {
+      console.error('Recording error:', error)
+    },
+  })
 
   // Model A: Sandbox flow
   const {
@@ -63,35 +83,19 @@ export default function PlaygroundPage() {
     },
   })
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime((prev) => prev + 1)
-      }, 1000)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [isRecording])
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handleRecordToggle = () => {
+  const handleRecordToggle = async () => {
     if (isRecording) {
-      setIsRecording(false)
-      setRecordingTime(0)
+      stopRecording()
       setShowInputBar(true)
-      setShareMode('video')
-      setTimeout(() => setShowShareModal(true), 300)
     } else {
-      setIsRecording(true)
-      setRecordingTime(0)
       setShowInputBar(false)
+      await startRecording()
     }
   }
 
@@ -183,6 +187,7 @@ export default function PlaygroundPage() {
           >
             {(viewMode === 'split' || viewMode === 'a') && (
               <div
+                ref={previewContainerRef}
                 className={`relative transition-all duration-300 bg-background shrink-0 ${
                   viewMode === 'split'
                     ? 'min-w-[600px] w-1/2 border-r border-border'
@@ -431,6 +436,8 @@ export default function PlaygroundPage() {
         mode={shareMode}
         appName={`${selectedModelA.name} vs ${selectedModelB.name} - ${new Date().toLocaleDateString()}`}
         shareUrl={`novita.ai/battle/${selectedModelA.id}-vs-${selectedModelB.id}`}
+        videoBlob={recordedBlob}
+        videoFormat={recordedFormat}
       />
     </div>
   )

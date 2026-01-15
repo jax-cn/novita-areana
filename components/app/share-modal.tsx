@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Download, Copy, X, Edit, Twitter, Linkedin, Upload, CircleDashed } from 'lucide-react';
-import { useState } from 'react';
+import { Download, Copy, X, Edit, Twitter, Linkedin, Upload, CircleDashed, FileVideo } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { convertVideoFormat } from '@/lib/video-converter';
 
 type VideoStatus = 'generating' | 'uploading' | 'ready';
 
@@ -22,6 +23,8 @@ interface ShareModalProps {
   shareUrl?: string;
   previewImage?: string;
   mode?: 'video' | 'poster';
+  videoBlob?: Blob | null;
+  videoFormat?: 'webm' | 'mp4' | null;
 }
 
 export function ShareModal({
@@ -31,10 +34,25 @@ export function ShareModal({
   shareUrl = 'app.ai/share/u/83js-29ks',
   previewImage = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBuEUyhZ3KbhHzwPx4RHXay5LWvoNIQsyjsNB6BH0lL_uQI9U9uI35qhlr-KxVKV-RScG5g4dTON7wx0rZTx88VrOzBkHMbOSg9Z1NPQlN92Ooga-SLJVc1u7aoLp_FzfkAzLdCMkQY-qoVeXSmGyB5ABY5ze5YGZguir7BeHmzYpi9eCUnEcgE_yZlMtkrUVJaHK7uYPfALmreCeBPFJQFc0gvj6x7vlxHsMPKAk3tUPW7xcyXJTdWwiuWpdwmboahOjJSDA-df1E',
   mode = 'poster',
+  videoBlob,
+  videoFormat,
 }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
-  const [videoStatus, setVideoStatus] = useState<VideoStatus>('generating');
+  const [videoStatus, setVideoStatus] = useState<VideoStatus>(videoBlob ? 'ready' : 'generating');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isConverting, setIsConverting] = useState(false);
+
+  // Create video URL from blob for preview
+  const videoUrl = videoBlob ? URL.createObjectURL(videoBlob) : null;
+
+  // Cleanup object URL when component unmounts or blob changes
+  useEffect(() => {
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [videoUrl]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -57,6 +75,43 @@ export function ShareModal({
     }, 300);
   };
 
+  const handleDownload = () => {
+    if (videoBlob && videoUrl) {
+      const a = document.createElement('a');
+      a.href = videoUrl;
+      const extension = videoFormat || 'webm';
+      a.download = `recording-${Date.now()}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
+  const handleDownloadAsMp4 = async () => {
+    if (!videoBlob || isConverting) return;
+
+    setIsConverting(true);
+    try {
+      // Convert to MP4
+      const mp4Blob = await convertVideoFormat(videoBlob, 'mp4');
+
+      // Download converted MP4
+      const url = URL.createObjectURL(mp4Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recording-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to convert video:', error);
+      alert('Failed to convert video to MP4. Please try again.');
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!w-[1100px] !max-w-[1100px] h-auto p-0 overflow-hidden gap-0">
@@ -73,25 +128,36 @@ export function ShareModal({
               className="w-full rounded-lg shadow-lg overflow-hidden relative bg-background border"
               style={{ aspectRatio: mode === 'video' ? '8/3' : '4/3', maxHeight: mode === 'video' ? '420px' : '560px' }}
             >
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${previewImage})` }}
-              />
-              {mode === 'video' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/20 transition-all cursor-pointer group">
-                  <Button
-                    size="icon"
-                    className="rounded-full w-16 h-16 bg-[#23D57C] text-black hover:bg-[#16B063] transition-all shadow-xl"
-                  >
-                    <svg
-                      className="w-8 h-8 ml-1"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </Button>
-                </div>
+              {mode === 'video' && videoUrl ? (
+                <video
+                  src={videoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain bg-black"
+                />
+              ) : (
+                <>
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${previewImage})` }}
+                  />
+                  {mode === 'video' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/20 transition-all cursor-pointer group">
+                      <Button
+                        size="icon"
+                        className="rounded-full w-16 h-16 bg-[#23D57C] text-black hover:bg-[#16B063] transition-all shadow-xl"
+                      >
+                        <svg
+                          className="w-8 h-8 ml-1"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Status Badges - Only show for video */}
@@ -142,22 +208,49 @@ export function ShareModal({
               ) : (
                 <>
                   {videoStatus === 'ready' ? (
-                    <div className="flex gap-2">
-                      <Button
-                        size="default"
-                        className="flex-1 gap-2 font-mono h-12 bg-[#23D57C] text-black hover:bg-[#16B063] text-sm"
-                      >
-                        <Download className="h-5 w-5" />
-                        Download Video
-                      </Button>
-                      <Button
-                        onClick={handleCopy}
-                        variant="outline"
-                        className="flex-1 gap-2 bg-black text-white hover:bg-black/90 border-black font-mono h-12 text-sm"
-                      >
-                        <Copy className="h-4 w-4" />
-                        {copied ? 'Copied!' : 'Copy Link'}
-                      </Button>
+                    <div className="space-y-2">
+                      {/* Show format info */}
+                      {videoFormat && (
+                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-full">
+                          <FileVideo className="h-3 w-3" />
+                          Format: <span className="font-semibold uppercase">{videoFormat}</span>
+                        </div>
+                      )}
+
+                      {/* Download buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleDownload}
+                          disabled={isConverting}
+                          size="default"
+                          className="flex-1 gap-2 font-mono h-12 bg-[#23D57C] text-black hover:bg-[#16B063] text-sm"
+                        >
+                          <Download className="h-5 w-5" />
+                          Download {videoFormat?.toUpperCase() || 'Video'}
+                        </Button>
+
+                        {/* Show MP4 conversion button for WebM videos */}
+                        {videoFormat === 'webm' && (
+                          <Button
+                            onClick={handleDownloadAsMp4}
+                            disabled={isConverting}
+                            variant="outline"
+                            className="flex-1 gap-2 font-mono h-12 border-primary text-primary hover:bg-primary/10 text-sm"
+                          >
+                            <Download className="h-5 w-5" />
+                            {isConverting ? 'Converting...' : 'Convert to MP4'}
+                          </Button>
+                        )}
+
+                        <Button
+                          onClick={handleCopy}
+                          variant="outline"
+                          className="flex-1 gap-2 bg-black text-white hover:bg-black/90 border-black font-mono h-12 text-sm"
+                        >
+                          <Copy className="h-4 w-4" />
+                          {copied ? 'Copied!' : 'Copy Link'}
+                        </Button>
+                      </div>
                     </div>
                   ) : videoStatus === 'uploading' ? (
                     <div className="space-y-2">
