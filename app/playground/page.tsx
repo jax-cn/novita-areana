@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,7 +15,7 @@ import {
   EyeOff,
   Square,
   RotateCcw,
-  Settings,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { ShareModal } from '@/components/app/share-modal'
 import { ModelSettingsPopover } from '@/components/app/model-settings-modal'
@@ -40,6 +40,16 @@ interface ModelResponse {
   loading: boolean
   completed: boolean
   html?: string
+  tokens?: number
+  duration?: number
+  startTime?: number
+}
+
+const initialModelResponse: ModelResponse = {
+  content: '',
+  reasoning: '',
+  loading: false,
+  completed: false,
 }
 
 export default function PlaygroundPage() {
@@ -55,18 +65,16 @@ export default function PlaygroundPage() {
   const [modelAView, setModelAView] = useState<'code' | 'preview'>('code')
   const [modelBView, setModelBView] = useState<'code' | 'preview'>('code')
 
-  const [modelAResponse, setModelAResponse] = useState<ModelResponse>({
-    content: '',
-    reasoning: '',
-    loading: false,
-    completed: false,
-  })
-  const [modelBResponse, setModelBResponse] = useState<ModelResponse>({
-    content: '',
-    reasoning: '',
-    loading: false,
-    completed: false,
-  })
+  const [modelAResponse, setModelAResponse] = useState<ModelResponse>(initialModelResponse)
+  const [modelBResponse, setModelBResponse] = useState<ModelResponse>(initialModelResponse)
+  
+  // 使用 ref 来追踪最新状态，避免闭包陷阱
+  const modelAResponseRef = useRef(modelAResponse)
+  const modelBResponseRef = useRef(modelBResponse)
+  
+  // 同步更新 ref
+  modelAResponseRef.current = modelAResponse
+  modelBResponseRef.current = modelBResponse
 
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareMode, setShareMode] = useState<'video' | 'poster'>('poster')
@@ -115,20 +123,172 @@ export default function PlaygroundPage() {
     }
   }
 
-  const stopGeneration = () => {
+  // 使用 AbortController 来支持取消生成
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  const stopGeneration = useCallback(() => {
+    // 中止请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
     // Stop both models generation
     setModelAResponse(prev => ({ ...prev, loading: false }))
     setModelBResponse(prev => ({ ...prev, loading: false }))
-  }
+  }, [])
 
-  const handleGenerate = async () => {
+  // 单独生成 Model A
+  const handleGenerateModelA = useCallback(async () => {
     if (!prompt.trim()) return
 
-    setModelAView('code')
-    setModelBView('code')
+    // 创建新的AbortController
+    const controller = new AbortController()
 
-    setModelAResponse({ content: '', reasoning: '', loading: true, completed: false })
-    setModelBResponse({ content: '', reasoning: '', loading: true, completed: false })
+    const startTime = Date.now()
+    
+    React.startTransition(() => {
+      setModelAView('code')
+      setModelAResponse({ content: '', reasoning: '', loading: true, completed: false, startTime })
+    })
+
+    const messages = [
+      {
+        role: 'user',
+        content: `${prompt} using HTML/CSS/JS in a single HTML file.`,
+      },
+    ]
+
+    await streamChatCompletion({
+      apiKey: NOVITA_API_KEY,
+      model: selectedModelA.id,
+      messages,
+      signal: controller.signal,
+      callbacks: {
+        onChunk: (chunk) => {
+          setModelAResponse((prev) => ({
+            ...prev,
+            content: prev.content + (chunk.content || ''),
+            reasoning: prev.reasoning + (chunk.reasoning_content || ''),
+          }))
+        },
+        onComplete: () => {
+          setModelAResponse((prev) => {
+            const html = extractHTMLFromMarkdown(prev.content)
+            const duration = prev.startTime ? (Date.now() - prev.startTime) / 1000 : 0
+            const tokens = Math.floor(prev.content.length / 4)
+            return {
+              ...prev,
+              loading: false,
+              completed: true,
+              html: html || undefined,
+              duration,
+              tokens,
+            }
+          })
+          // 如果Model B也完成了，切换到预览
+          if (modelBResponseRef.current.completed && modelBResponseRef.current.html) {
+            setModelAView('preview')
+            setModelBView('preview')
+          }
+        },
+        onError: (error) => {
+          console.error('Model A error:', error)
+          setModelAResponse((prev) => ({
+            ...prev,
+            loading: false,
+            completed: true,
+            content: prev.content + '\n\nError: ' + error.message,
+          }))
+        },
+      },
+    })
+  }, [prompt, selectedModelA.id])
+
+  // 单独生成 Model B
+  const handleGenerateModelB = useCallback(async () => {
+    if (!prompt.trim()) return
+
+    // 创建新的AbortController
+    const controller = new AbortController()
+
+    const startTime = Date.now()
+    
+    React.startTransition(() => {
+      setModelBView('code')
+      setModelBResponse({ content: '', reasoning: '', loading: true, completed: false, startTime })
+    })
+
+    const messages = [
+      {
+        role: 'user',
+        content: `${prompt} using HTML/CSS/JS in a single HTML file.`,
+      },
+    ]
+
+    await streamChatCompletion({
+      apiKey: NOVITA_API_KEY,
+      model: selectedModelB.id,
+      messages,
+      signal: controller.signal,
+      callbacks: {
+        onChunk: (chunk) => {
+          setModelBResponse((prev) => ({
+            ...prev,
+            content: prev.content + (chunk.content || ''),
+            reasoning: prev.reasoning + (chunk.reasoning_content || ''),
+          }))
+        },
+        onComplete: () => {
+          setModelBResponse((prev) => {
+            const html = extractHTMLFromMarkdown(prev.content)
+            const duration = prev.startTime ? (Date.now() - prev.startTime) / 1000 : 0
+            const tokens = Math.floor(prev.content.length / 4)
+            return {
+              ...prev,
+              loading: false,
+              completed: true,
+              html: html || undefined,
+              duration,
+              tokens,
+            }
+          })
+          // 如果Model A也完成了，切换到预览
+          if (modelAResponseRef.current.completed && modelAResponseRef.current.html) {
+            setModelAView('preview')
+            setModelBView('preview')
+          }
+        },
+        onError: (error) => {
+          console.error('Model B error:', error)
+          setModelBResponse((prev) => ({
+            ...prev,
+            loading: false,
+            completed: true,
+            content: prev.content + '\n\nError: ' + error.message,
+          }))
+        },
+      },
+    })
+  }, [prompt, selectedModelB.id])
+
+  // 同时生成两个模型
+  const handleGenerate = useCallback(async () => {
+    if (!prompt.trim()) return
+
+    // 如果正在生成，先停止
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
+    const startTime = Date.now()
+    
+    React.startTransition(() => {
+      setModelAView('code')
+      setModelBView('code')
+      setModelAResponse({ content: '', reasoning: '', loading: true, completed: false, startTime })
+      setModelBResponse({ content: '', reasoning: '', loading: true, completed: false, startTime })
+    })
 
     const messages = [
       {
@@ -141,6 +301,7 @@ export default function PlaygroundPage() {
       apiKey: NOVITA_API_KEY,
       model: selectedModelA.id,
       messages,
+      signal: abortControllerRef.current.signal,
       callbacks: {
         onChunk: (chunk) => {
           setModelAResponse((prev) => ({
@@ -152,14 +313,19 @@ export default function PlaygroundPage() {
         onComplete: () => {
           setModelAResponse((prev) => {
             const html = extractHTMLFromMarkdown(prev.content)
+            const duration = prev.startTime ? (Date.now() - prev.startTime) / 1000 : 0
+            const tokens = Math.floor(prev.content.length / 4) // 估算token数
             return {
               ...prev,
               loading: false,
               completed: true,
               html: html || undefined,
+              duration,
+              tokens,
             }
           })
-          if (modelBResponse.completed && modelBResponse.html) {
+          // 使用 ref 获取最新状态
+          if (modelBResponseRef.current.completed && modelBResponseRef.current.html) {
             setModelAView('preview')
             setModelBView('preview')
           }
@@ -180,6 +346,7 @@ export default function PlaygroundPage() {
       apiKey: NOVITA_API_KEY,
       model: selectedModelB.id,
       messages,
+      signal: abortControllerRef.current.signal,
       callbacks: {
         onChunk: (chunk) => {
           setModelBResponse((prev) => ({
@@ -191,14 +358,19 @@ export default function PlaygroundPage() {
         onComplete: () => {
           setModelBResponse((prev) => {
             const html = extractHTMLFromMarkdown(prev.content)
+            const duration = prev.startTime ? (Date.now() - prev.startTime) / 1000 : 0
+            const tokens = Math.floor(prev.content.length / 4) // 估算token数
             return {
               ...prev,
               loading: false,
               completed: true,
               html: html || undefined,
+              duration,
+              tokens,
             }
           })
-          if (modelAResponse.completed && modelAResponse.html) {
+          // 使用 ref 获取最新状态
+          if (modelAResponseRef.current.completed && modelAResponseRef.current.html) {
             setModelAView('preview')
             setModelBView('preview')
           }
@@ -216,8 +388,49 @@ export default function PlaygroundPage() {
     })
 
     await Promise.allSettled([modelAPromise, modelBPromise])
-  }
+  }, [prompt, selectedModelA.id, selectedModelB.id])
 
+  // 使用ref跟踪上一次的模型ID
+  const prevModelAIdRef = useRef(selectedModelA.id)
+  const prevModelBIdRef = useRef(selectedModelB.id)
+  const isInitialRef = useRef(true)
+
+  // 监听Model A切换，自动重新生成Model A
+  React.useEffect(() => {
+    // 第一次渲染时跳过
+    if (isInitialRef.current) {
+      isInitialRef.current = false
+      return
+    }
+
+    const modelAChanged = prevModelAIdRef.current !== selectedModelA.id
+    
+    // 只有在已经有生成内容且模型确实发生变化的情况下才自动重新生成
+    if (modelAChanged && modelAResponse.content) {
+      handleGenerateModelA()
+    }
+    
+    // 更新ref
+    prevModelAIdRef.current = selectedModelA.id
+  }, [selectedModelA.id])
+
+  // 监听Model B切换，自动重新生成Model B
+  React.useEffect(() => {
+    // 第一次渲染时跳过
+    if (isInitialRef.current) {
+      return
+    }
+
+    const modelBChanged = prevModelBIdRef.current !== selectedModelB.id
+    
+    // 只有在已经有生成内容且模型确实发生变化的情况下才自动重新生成
+    if (modelBChanged && modelBResponse.content) {
+      handleGenerateModelB()
+    }
+    
+    // 更新ref
+    prevModelBIdRef.current = selectedModelB.id
+  }, [selectedModelB.id])
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-white">
@@ -316,13 +529,20 @@ export default function PlaygroundPage() {
                     <span className="text-xs font-medium">Generating...</span>
                   </div>
                 )}
+                {!modelAResponse.loading && modelAResponse.completed && modelAResponse.tokens && (
+                  <div className="flex items-center gap-3 text-xs text-[#9e9c98]">
+                    <span className="font-medium">{modelAResponse.tokens} tokens</span>
+                    <span className="text-[#e7e6e2]">•</span>
+                    <span className="font-medium">{modelAResponse.duration?.toFixed(1)}s</span>
+                  </div>
+                )}
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex bg-[#f5f5f5] p-0.5 rounded-lg border border-[#e7e6e2]">
+                <div className="flex items-center">
+                  <div className="flex bg-[#f5f5f5] p-0.5 rounded-lg border border-[#e7e6e2] mr-2">
                     <button
                       onClick={() => setModelAView('code')}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
                         modelAView === 'code'
                           ? 'bg-white text-black shadow-sm'
                           : 'text-[#666] hover:text-black'
@@ -332,7 +552,7 @@ export default function PlaygroundPage() {
                     </button>
                     <button
                       onClick={() => setModelAView('preview')}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
                         modelAView === 'preview'
                           ? 'bg-white text-black shadow-sm'
                           : 'text-[#666] hover:text-black'
@@ -341,6 +561,15 @@ export default function PlaygroundPage() {
                       Preview
                     </button>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-lg hover:bg-muted/80 cursor-pointer"
+                    onClick={handleGenerateModelA}
+                    title="Retry generation"
+                  >
+                    <RotateCcw className="h-4 w-4 text-[#9e9c98]" />
+                  </Button>
                   <ModelSettingsPopover
                     modelName={selectedModelA.name}
                     settings={modelASettings}
@@ -351,7 +580,7 @@ export default function PlaygroundPage() {
                       size="icon"
                       className="size-8 rounded-lg hover:bg-muted/80 cursor-pointer"
                     >
-                      <Settings className="h-4 w-4 text-[#9e9c98]" />
+                      <SlidersHorizontal className="h-4 w-4 text-[#9e9c98]" />
                     </Button>
                   </ModelSettingsPopover>
                   <Button
@@ -365,8 +594,9 @@ export default function PlaygroundPage() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-hidden">
-                {modelAView === 'code' ? (
+              <div className="flex-1 overflow-hidden relative">
+                {/* Code View - 始终渲染，用 CSS 控制显示 */}
+                <div className={`absolute inset-0 ${modelAView === 'code' ? 'block' : 'hidden'}`}>
                   <StreamingCodeDisplay
                     content={modelAResponse.content}
                     reasoning={modelAResponse.reasoning}
@@ -375,23 +605,24 @@ export default function PlaygroundPage() {
                       setModelAView('preview')
                     }}
                   />
-                ) : (
-                  <div className="w-full h-full">
-                    {modelAResponse.html ? (
-                      <iframe
-                        srcDoc={modelAResponse.html}
-                        className="w-full h-full border-0"
-                        title="Preview"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        {modelAResponse.loading
-                          ? 'Generating HTML...'
-                          : 'No HTML available for preview'}
-                      </div>
-                    )}
-                  </div>
-                )}
+                </div>
+                
+                {/* Preview View - 始终渲染，用 CSS 控制显示 */}
+                <div className={`absolute inset-0 ${modelAView === 'preview' ? 'block' : 'hidden'}`}>
+                  {modelAResponse.html ? (
+                    <iframe
+                      srcDoc={modelAResponse.html}
+                      className="w-full h-full border-0"
+                      title="Preview"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      {modelAResponse.loading
+                        ? 'Generating HTML...'
+                        : 'No HTML available for preview'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -435,10 +666,17 @@ export default function PlaygroundPage() {
                     <span className="text-xs font-medium">Generating...</span>
                   </div>
                 )}
+                {!modelBResponse.loading && modelBResponse.completed && modelBResponse.tokens && (
+                  <div className="flex items-center gap-3 text-xs text-[#9e9c98]">
+                    <span className="font-medium">{modelBResponse.tokens} tokens</span>
+                    <span className="text-[#e7e6e2]">•</span>
+                    <span className="font-medium">{modelBResponse.duration?.toFixed(1)}s</span>
+                  </div>
+                )}
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex bg-[#f5f5f5] p-0.5 rounded-lg border border-[#e7e6e2]">
+                <div className="flex items-center">
+                  <div className="flex bg-[#f5f5f5] p-0.5 rounded-lg border border-[#e7e6e2] mr-2">
                     <button
                       onClick={() => setModelBView('code')}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
@@ -460,6 +698,15 @@ export default function PlaygroundPage() {
                       Preview
                     </button>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-lg hover:bg-muted/80 cursor-pointer"
+                    onClick={handleGenerateModelB}
+                    title="Retry generation"
+                  >
+                    <RotateCcw className="h-4 w-4 text-[#9e9c98]" />
+                  </Button>
                   <ModelSettingsPopover
                     modelName={selectedModelB.name}
                     settings={modelBSettings}
@@ -470,7 +717,7 @@ export default function PlaygroundPage() {
                       size="icon"
                       className="size-8 rounded-lg hover:bg-muted/80 cursor-pointer"
                     >
-                      <Settings className="h-4 w-4 text-[#9e9c98]" />
+                      <SlidersHorizontal className="h-4 w-4 text-[#9e9c98]" />
                     </Button>
                   </ModelSettingsPopover>
                   <Button
@@ -484,8 +731,9 @@ export default function PlaygroundPage() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-hidden">
-                {modelBView === 'code' ? (
+              <div className="flex-1 overflow-hidden relative">
+                {/* Code View - 始终渲染，用 CSS 控制显示 */}
+                <div className={`absolute inset-0 ${modelBView === 'code' ? 'block' : 'hidden'}`}>
                   <StreamingCodeDisplay
                     content={modelBResponse.content}
                     reasoning={modelBResponse.reasoning}
@@ -494,23 +742,24 @@ export default function PlaygroundPage() {
                       setModelBView('preview')
                     }}
                   />
-                ) : (
-                  <div className="w-full h-full">
-                    {modelBResponse.html ? (
-                      <iframe
-                        srcDoc={modelBResponse.html}
-                        className="w-full h-full border-0"
-                        title="Preview"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        {modelBResponse.loading
-                          ? 'Generating HTML...'
-                          : 'No HTML available for preview'}
-                      </div>
-                    )}
-                  </div>
-                )}
+                </div>
+                
+                {/* Preview View - 始终渲染，用 CSS 控制显示 */}
+                <div className={`absolute inset-0 ${modelBView === 'preview' ? 'block' : 'hidden'}`}>
+                  {modelBResponse.html ? (
+                    <iframe
+                      srcDoc={modelBResponse.html}
+                      className="w-full h-full border-0"
+                      title="Preview"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      {modelBResponse.loading
+                        ? 'Generating HTML...'
+                        : 'No HTML available for preview'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -585,17 +834,15 @@ export default function PlaygroundPage() {
           </div>
         )}
 
-
-
         {!showInputBar && !isRecording && (
           <Button
             onClick={() => setShowInputBar(true)}
             size="sm"
             className="absolute bottom-8 left-1/2 -translate-x-1/2 gap-2 px-4 py-2 rounded-full shadow-lg cursor-pointer"
-            title="Show input bar"
+            title="Show prompt"
           >
             <Eye className="h-4 w-4" />
-            Show Input
+            Show Prompt
           </Button>
         )}
       </main>
