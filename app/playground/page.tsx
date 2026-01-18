@@ -14,8 +14,11 @@ import {
   Eye,
   EyeOff,
   Square,
+  RotateCcw,
+  Settings,
 } from 'lucide-react'
 import { ShareModal } from '@/components/app/share-modal'
+import { ModelSettingsPopover } from '@/components/app/model-settings-modal'
 import { UserAvatar } from '@/components/app/user-avatar'
 import { StreamingCodeDisplay } from '@/components/playground/streaming-code-display'
 import {
@@ -68,6 +71,15 @@ export default function PlaygroundPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareMode, setShareMode] = useState<'video' | 'poster'>('poster')
   const [recordedFormat, setRecordedFormat] = useState<'webm' | 'mp4' | null>(null)
+  
+  // Model settings
+  const [modelASettings, setModelASettings] = useState({
+    temperature: 0.7,
+  })
+  
+  const [modelBSettings, setModelBSettings] = useState({
+    temperature: 0.7,
+  })
 
   const {
     isRecording,
@@ -103,6 +115,12 @@ export default function PlaygroundPage() {
     }
   }
 
+  const stopGeneration = () => {
+    // Stop both models generation
+    setModelAResponse(prev => ({ ...prev, loading: false }))
+    setModelBResponse(prev => ({ ...prev, loading: false }))
+  }
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return
 
@@ -115,9 +133,7 @@ export default function PlaygroundPage() {
     const messages = [
       {
         role: 'user',
-        content: `Create a complete HTML file for: ${prompt}. 
-Please provide the HTML code in a markdown code block with language "html". 
-The HTML should be a self-contained, complete file with all necessary CSS and JavaScript included.`,
+        content: `${prompt} using HTML/CSS/JS in a single HTML file.`,
       },
     ]
 
@@ -259,26 +275,27 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
         </div>
       </header>
 
-      <main ref={previewContainerRef} className="flex flex-1 relative overflow-hidden">
-        <div className="flex flex-1">
+      <main ref={previewContainerRef} className="w-screen flex flex-1 relative overflow-hidden">
+        <div className="w-full flex flex-1">
           {viewMode !== 'b' && (
-            <div className="flex-1 flex flex-col border-r border-[#f4f4f5] bg-white relative overflow-hidden">
+            <div className={`${viewMode === 'split' ? 'w-1/2' : 'flex-1'} flex flex-col border-r border-[#f4f4f5] bg-white relative overflow-hidden`}>
               <div className="h-16 border-b border-[#e7e6e2] flex items-center justify-between px-4 bg-white shrink-0">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="gap-2 h-8 px-3 py-1.5 bg-[#f5f5f5] rounded-lg hover:bg-[#e7e6e2] transition-colors cursor-pointer"
-                    >
-                      <span className={`size-5 rounded-sm ${selectedModelA.color}`} />
-                      <span className="text-[16px] font-medium text-[#4f4e4a] font-sans">
-                        {selectedModelA.name}
-                      </span>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M5 7.5L10 12.5L15 7.5" stroke="#9e9c98" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </Button>
-                  </DropdownMenuTrigger>
+                <div className="flex items-center gap-3">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="gap-2 h-8 px-3 py-1.5 bg-[#f5f5f5] rounded-lg hover:bg-[#e7e6e2] transition-colors cursor-pointer"
+                      >
+                        <span className={`size-5 rounded-sm ${selectedModelA.color}`} />
+                        <span className="text-[16px] font-medium text-[#4f4e4a] font-sans">
+                          {selectedModelA.name}
+                        </span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <path d="M5 7.5L10 12.5L15 7.5" stroke="#9e9c98" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </Button>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
                     {models.map((model) => (
                       <DropdownMenuItem
@@ -292,6 +309,14 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                
+                {modelAResponse.loading && (
+                  <div className="flex items-center gap-2 text-sm text-[#9e9c98]">
+                    <div className="animate-spin size-4 border-2 border-[#23d57c] border-t-transparent rounded-full" />
+                    <span className="text-xs font-medium">Generating...</span>
+                  </div>
+                )}
+                </div>
 
                 <div className="flex items-center gap-4">
                   <div className="flex bg-[#f5f5f5] p-0.5 rounded-lg border border-[#e7e6e2]">
@@ -316,6 +341,19 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                       Preview
                     </button>
                   </div>
+                  <ModelSettingsPopover
+                    modelName={selectedModelA.name}
+                    settings={modelASettings}
+                    onSettingsChange={setModelASettings}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 rounded-lg hover:bg-muted/80 cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4 text-[#9e9c98]" />
+                    </Button>
+                  </ModelSettingsPopover>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -332,6 +370,10 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                   <StreamingCodeDisplay
                     content={modelAResponse.content}
                     reasoning={modelAResponse.reasoning}
+                    onPreview={(html) => {
+                      setModelAResponse(prev => ({ ...prev, html }))
+                      setModelAView('preview')
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full">
@@ -355,23 +397,24 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
           )}
 
           {viewMode !== 'a' && (
-            <div className="flex-1 flex flex-col bg-[rgba(250,250,250,0.5)] relative overflow-hidden">
-              <div className="h-16 border-b border-[#e7e6e2] flex items-center justify-between px-4 bg-transparent shrink-0">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="gap-2 h-8 px-3 py-1.5 rounded-lg hover:bg-[#f5f5f5] transition-colors cursor-pointer"
-                    >
-                      <span className={`size-5 rounded-sm ${selectedModelB.color}`} />
-                      <span className="text-[16px] font-medium text-[#4f4e4a] font-sans">
-                        {selectedModelB.name}
-                      </span>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M5 7.5L10 12.5L15 7.5" stroke="#9e9c98" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </Button>
-                  </DropdownMenuTrigger>
+            <div className={`${viewMode === 'split' ? 'w-1/2' : 'flex-1'} flex flex-col bg-white relative overflow-hidden`}>
+              <div className="h-16 border-b border-[#e7e6e2] flex items-center justify-between px-4 bg-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="gap-2 h-8 px-3 py-1.5 rounded-lg hover:bg-[#f5f5f5] transition-colors cursor-pointer"
+                      >
+                        <span className={`size-5 rounded-sm ${selectedModelB.color}`} />
+                        <span className="text-[16px] font-medium text-[#4f4e4a] font-sans">
+                          {selectedModelB.name}
+                        </span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <path d="M5 7.5L10 12.5L15 7.5" stroke="#9e9c98" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </Button>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
                     {models.map((model) => (
                       <DropdownMenuItem
@@ -385,6 +428,14 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                
+                {modelBResponse.loading && (
+                  <div className="flex items-center gap-2 text-sm text-[#9e9c98]">
+                    <div className="animate-spin size-4 border-2 border-[#23d57c] border-t-transparent rounded-full" />
+                    <span className="text-xs font-medium">Generating...</span>
+                  </div>
+                )}
+                </div>
 
                 <div className="flex items-center gap-4">
                   <div className="flex bg-[#f5f5f5] p-0.5 rounded-lg border border-[#e7e6e2]">
@@ -409,6 +460,19 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                       Preview
                     </button>
                   </div>
+                  <ModelSettingsPopover
+                    modelName={selectedModelB.name}
+                    settings={modelBSettings}
+                    onSettingsChange={setModelBSettings}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 rounded-lg hover:bg-muted/80 cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4 text-[#9e9c98]" />
+                    </Button>
+                  </ModelSettingsPopover>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -425,6 +489,10 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                   <StreamingCodeDisplay
                     content={modelBResponse.content}
                     reasoning={modelBResponse.reasoning}
+                    onPreview={(html) => {
+                      setModelBResponse(prev => ({ ...prev, html }))
+                      setModelBView('preview')
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full">
@@ -451,70 +519,73 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
         {showInputBar && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[720px] z-50">
             <div className="relative rounded-2xl shadow-[0px_20px_40px_-12px_rgba(0,0,0,0.15)] bg-white/80 backdrop-blur-xl border border-white/50 overflow-hidden">
-                <div className="flex flex-col gap-2 p-4">
-                  <div className="flex gap-3 items-start min-h-[136px]">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <div className="inline-flex items-center gap-2 px-2 py-1.5 bg-[#f1f5f9] rounded-full self-start">
-                        <span className="size-2 rounded-full bg-[#2b7fff]" />
-                        <span className="text-[14px] text-[#45556c] font-sans leading-5">HTML Generation</span>
-                      </div>
-
-                      <div className="text-[16px] text-[#4f4e4a] leading-6 font-sans">
-                        {prompt || "Building your HTML page..."}
-                      </div>
-                    </div>
-
-                    {(modelAResponse.loading || modelBResponse.loading) && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0 mt-6">
-                        <div className="animate-spin size-4 border-2 border-[#23d57c] border-t-transparent rounded-full" />
-                        Generating...
-                      </div>
-                    )}
-                  </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-[#f4f4f5]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1.5 h-7 px-2.5 text-[12px] font-normal text-[#4f4e4a] hover:bg-muted/50 rounded-lg transition-colors cursor-pointer font-sans"
-                    onClick={() => setShowInputBar(false)}
-                    title="Hide controls"
-                  >
-                    <EyeOff className="h-4 w-4" />
-                    Hide controls
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showInputBar && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[700px] z-50">
-            <div className="relative rounded-2xl shadow-2xl bg-white/80 backdrop-blur-xl border border-white/20 overflow-hidden">
-              <div className="flex flex-col p-4">
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 min-h-[56px] relative">
+              <div className="flex flex-col gap-2 p-4">
+                <div className="h-[56.75px] relative w-full">
+                  <div className="absolute flex items-start left-0 overflow-hidden top-[8px] w-[566px] h-[48.75px]">
                     <Textarea
-                      placeholder="Describe the app you want to build..."
-                      className="w-full h-14 min-h-[56px] max-h-40 bg-transparent border-0 resize-none focus-visible:ring-0 p-2 text-base leading-relaxed placeholder:text-muted-foreground/50 font-medium font-['TT_Interphases_Pro']"
+                      placeholder="Describe your app... (Press Enter to send)"
+                      className="w-full h-full bg-transparent border-0 resize-none focus-visible:ring-0 p-0 text-[16px] text-[#4f4e4a] leading-[24px] placeholder:text-[#9e9c98] font-sans font-normal scrollbar-none"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleGenerate()
+                        }
+                      }}
                     />
                   </div>
                   <Button
-                    onClick={handleGenerate}
+                    onClick={() => {
+                      if (modelAResponse.loading || modelBResponse.loading) {
+                        stopGeneration()
+                      } else if (modelAResponse.completed && modelBResponse.completed) {
+                        handleGenerate()
+                      } else {
+                        handleGenerate()
+                      }
+                    }}
                     size="icon"
-                    className="mb-1 size-10 rounded-xl bg-[#23d57c] hover:bg-[#23d57c]/90 text-white shadow-lg shadow-[#23d57c]/20 transition-all active:scale-95 group shrink-0"
-                    disabled={!prompt.trim()}
+                    className={`absolute right-0 top-[12.25px] size-9 rounded-xl transition-all active:scale-95 group shrink-0 ${
+                      modelAResponse.loading || modelBResponse.loading
+                        ? 'bg-red-500 hover:bg-red-600 text-white shadow-[0px_4px_6px_-4px_rgba(239,68,68,0.5)]'
+                        : modelAResponse.completed && modelBResponse.completed
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-[0px_4px_6px_-4px_rgba(249,115,22,0.5)]'
+                        : 'bg-[#23d57c] hover:bg-[#23d57c]/90 text-white shadow-[0px_4px_6px_-4px_rgba(35,213,124,0.5)]'
+                    }`}
+                    disabled={!prompt.trim() && !(modelAResponse.loading || modelBResponse.loading)}
                   >
-                    <ArrowUp className="h-5 w-5 group-hover:-translate-y-0.5 transition-transform" />
+                    {modelAResponse.loading || modelBResponse.loading ? (
+                      <Square className="h-4 w-4 fill-current" />
+                    ) : modelAResponse.completed && modelBResponse.completed ? (
+                      <RotateCcw className="h-4 w-4 group-hover:-rotate-12 transition-transform" />
+                    ) : (
+                      <ArrowUp className="h-4 w-4 group-hover:-translate-y-0.5 transition-transform" />
+                    )}
                   </Button>
+                </div>
+
+                <div className="flex flex-col items-start overflow-hidden pb-0 pt-2 px-0 relative w-full">
+                  <div className="border-[#f4f4f5] border-solid border-t flex items-center justify-end pb-0 pt-2 px-0 relative w-full">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 h-7 px-2.5 text-[12px] font-normal text-[#4f4e4a] hover:bg-muted/50 rounded-lg transition-colors cursor-pointer"
+                      onClick={() => setShowInputBar(false)}
+                      title="Hide controls"
+                    >
+                      <EyeOff className="h-4 w-4" />
+                      Hide controls
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+
 
         {!showInputBar && !isRecording && (
           <Button

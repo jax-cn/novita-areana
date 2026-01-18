@@ -223,6 +223,7 @@ export default function HomePage() {
                   <textarea
                     value={placeholderText}
                     placeholder="Describe what you want to create..."
+                    readOnly
                     className="w-full min-h-[82px] resize-none bg-transparent text-[#4f4e4a] text-base font-normal leading-6 font-['TT_Interphases_Pro',sans-serif] outline-none placeholder:text-[#9e9c98]"
                   />
 

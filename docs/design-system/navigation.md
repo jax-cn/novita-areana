@@ -137,7 +137,7 @@ export function MenuItem({ title, description, icon, href }: MenuItemProps) {
         {icon}
       </div>
       <div className="flex flex-col gap-1">
-        <p className="font-['TT_Interphases_Pro'] text-base leading-6 text-black">
+        <p className="font-sans text-base leading-6 text-black">
           {title}
         </p>
         <p className="font-['TT_Interphases_Pro_Mono'] text-sm leading-4 text-[#4F4E4A]">
