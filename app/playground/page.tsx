@@ -216,7 +216,7 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-[20px] font-semibold text-black tracking-tight font-['TT_Interphases_Pro']">
+          <h1 className="text-[20px] font-semibold text-black tracking-tight font-sans">
             Arena Playground
           </h1>
         </div>
@@ -271,7 +271,7 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                       className="gap-2 h-8 px-3 py-1.5 bg-[#f5f5f5] rounded-lg hover:bg-[#e7e6e2] transition-colors cursor-pointer"
                     >
                       <span className={`size-5 rounded-sm ${selectedModelA.color}`} />
-                      <span className="text-[16px] font-medium text-[#4f4e4a] font-['TT_Interphases_Pro']">
+                      <span className="text-[16px] font-medium text-[#4f4e4a] font-sans">
                         {selectedModelA.name}
                       </span>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -364,7 +364,7 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                       className="gap-2 h-8 px-3 py-1.5 rounded-lg hover:bg-[#f5f5f5] transition-colors cursor-pointer"
                     >
                       <span className={`size-5 rounded-sm ${selectedModelB.color}`} />
-                      <span className="text-[16px] font-medium text-[#4f4e4a] font-['TT_Interphases_Pro']">
+                      <span className="text-[16px] font-medium text-[#4f4e4a] font-sans">
                         {selectedModelB.name}
                       </span>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -456,10 +456,10 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                     <div className="flex-1 flex flex-col gap-2">
                       <div className="inline-flex items-center gap-2 px-2 py-1.5 bg-[#f1f5f9] rounded-full self-start">
                         <span className="size-2 rounded-full bg-[#2b7fff]" />
-                        <span className="text-[14px] text-[#45556c] font-['TT_Interphases_Pro'] leading-5">HTML Generation</span>
+                        <span className="text-[14px] text-[#45556c] font-sans leading-5">HTML Generation</span>
                       </div>
 
-                      <div className="text-[16px] text-[#4f4e4a] leading-6 font-['TT_Interphases_Pro']">
+                      <div className="text-[16px] text-[#4f4e4a] leading-6 font-sans">
                         {prompt || "Building your HTML page..."}
                       </div>
                     </div>
@@ -476,7 +476,7 @@ The HTML should be a self-contained, complete file with all necessary CSS and Ja
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-1.5 h-7 px-2.5 text-[12px] font-normal text-[#4f4e4a] hover:bg-muted/50 rounded-lg transition-colors cursor-pointer font-['TT_Interphases_Pro']"
+                    className="gap-1.5 h-7 px-2.5 text-[12px] font-normal text-[#4f4e4a] hover:bg-muted/50 rounded-lg transition-colors cursor-pointer font-sans"
                     onClick={() => setShowInputBar(false)}
                     title="Hide controls"
                   >

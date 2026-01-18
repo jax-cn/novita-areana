@@ -12,7 +12,7 @@ export function Header() {
               <path d="M11.9999 0L0 14.8333H23.9998L11.9999 0Z" fill="#23D57C"/>
             </svg>
           </div>
-          <span className="text-[#292827] font-['TT_Interphases_Pro',sans-serif] font-semibold text-[16px] leading-[14.286px]">
+          <span className="text-[#292827] font-sans font-semibold text-[16px] leading-[14.286px]">
             Novita
           </span>
         </Link>
@@ -21,25 +21,25 @@ export function Header() {
         <nav className="flex items-center gap-8">
           <Link 
             href="/" 
-            className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
+            className="text-[#292827] font-mono text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
           >
             Home
           </Link>
           <Link 
             href="/hackathon" 
-            className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
+            className="text-[#292827] font-mono text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
           >
             Hackathon
           </Link>
           <Link 
             href="/gallery" 
-            className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
+            className="text-[#292827] font-mono text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
           >
             Gallery
           </Link>
           <Link 
             href="/terms" 
-            className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
+            className="text-[#292827] font-mono text-[14px] leading-[16px] hover:text-[#23d57c] transition-colors"
           >
             Terms
           </Link>
@@ -48,7 +48,7 @@ export function Header() {
         {/* Log In Button */}
         <Button 
           variant="outline" 
-          className="border-[#e7e6e2] text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] hover:border-[#23d57c] hover:text-[#23d57c]"
+          className="border-[#e7e6e2] text-[#292827] font-mono text-[14px] leading-[16px] hover:border-[#23d57c] hover:text-[#23d57c]"
         >
           Log In
         </Button>

@@ -6,7 +6,7 @@
 - **Weights Available**: Regular (400), Medium (500), DemiBold (600)
 - **Usage**: Headings, body text, UI elements
 
-### Secondary Font: TT Interfaces Mono
+### Secondary Font: TT Interphases Pro Mono
 - **Weight Available**: Regular (400)
 - **Usage**: Code, captions, labels, technical text
 
@@ -74,7 +74,7 @@ color: #292827;
 
 ### Mono/Caption Example
 ```css
-font-family: 'TT Interfaces Mono', monospace;
+font-family: 'TT Interphases Pro Mono', monospace;
 font-size: 12px;
 font-weight: 400;
 line-height: 1.2;

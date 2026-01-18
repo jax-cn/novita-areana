@@ -15,7 +15,7 @@ export function Footer() {
                     <path d="M11.9999 0L0 14.8333H23.9998L11.9999 0Z" fill="#23D57C"/>
                   </svg>
                 </div>
-                <span className="text-[#292827] font-['TT_Interphases_Pro',sans-serif] font-semibold text-[16px] leading-[14.286px]">
+                <span className="text-[#292827] font-sans font-semibold text-[16px] leading-[14.286px]">
                   Novita
                 </span>
               </Link>
@@ -23,7 +23,7 @@ export function Footer() {
               {/* Status */}
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-[#23d57c]" />
-                <span className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px]">
+                <span className="text-[#292827] font-mono text-[14px] leading-[16px]">
                   All Systems Normal
                 </span>
               </div>
@@ -60,17 +60,17 @@ export function Footer() {
             <div className="flex gap-2 w-[160px]">
               <div className="w-px h-[333px] bg-[#e7e6e2]" />
               <div className="flex flex-col gap-4 w-[159px]">
-                <div className="text-[#4f4e4a] font-['TT_Interphases_Pro_Mono',sans-serif] text-[12px] leading-[20px] tracking-[0.24px]">
+                <div className="text-[#4f4e4a] font-mono text-[12px] leading-[20px] tracking-[0.24px]">
                   CONTACT
                 </div>
                 <div className="flex flex-col gap-4">
-                  <Link href="/contact" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/contact" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Contact support
                   </Link>
-                  <Link href="/demo" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/demo" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Book a demo
                   </Link>
-                  <Link href="/supply" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/supply" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Supply GPUs
                   </Link>
                 </div>
@@ -81,20 +81,20 @@ export function Footer() {
             <div className="flex gap-2 w-[160px]">
               <div className="w-px h-[333px] bg-[#e7e6e2]" />
               <div className="flex flex-col gap-4 w-[158px]">
-                <div className="text-[#4f4e4a] font-['TT_Interphases_Pro_Mono',sans-serif] text-[12px] leading-[20px] tracking-[0.24px]">
+                <div className="text-[#4f4e4a] font-mono text-[12px] leading-[20px] tracking-[0.24px]">
                   RESOURCES
                 </div>
                 <div className="flex flex-col gap-4">
-                  <Link href="/docs" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/docs" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Docs
                   </Link>
-                  <Link href="/pricing" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/pricing" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Pricing
                   </Link>
-                  <Link href="/blog" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/blog" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Blog
                   </Link>
-                  <Link href="/affiliate" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/affiliate" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Affiliate
                   </Link>
                 </div>
@@ -105,17 +105,17 @@ export function Footer() {
             <div className="flex gap-2 w-[160px]">
               <div className="w-px h-[333px] bg-[#e7e6e2]" />
               <div className="flex flex-col gap-4 w-[159px]">
-                <div className="text-[#4f4e4a] font-['TT_Interphases_Pro_Mono',sans-serif] text-[12px] leading-[20px] tracking-[0.24px]">
+                <div className="text-[#4f4e4a] font-mono text-[12px] leading-[20px] tracking-[0.24px]">
                   COMPANY
                 </div>
                 <div className="flex flex-col gap-4">
-                  <Link href="/about" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/about" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     About
                   </Link>
-                  <Link href="/privacy" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/privacy" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Privacy
                   </Link>
-                  <Link href="/terms" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/terms" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Terms
                   </Link>
                 </div>
@@ -126,14 +126,14 @@ export function Footer() {
             <div className="flex gap-2 w-[160px]">
               <div className="w-px h-[333px] bg-[#e7e6e2]" />
               <div className="flex flex-col gap-4">
-                <div className="text-[#4f4e4a] font-['TT_Interphases_Pro_Mono',sans-serif] text-[12px] leading-[20px] tracking-[0.24px]">
+                <div className="text-[#4f4e4a] font-mono text-[12px] leading-[20px] tracking-[0.24px]">
                   PARTNERS
                 </div>
                 <div className="flex flex-col gap-4">
-                  <Link href="/startup" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/startup" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Startup Program
                   </Link>
-                  <Link href="/become-affiliate" className="text-[#292827] font-['TT_Interphases_Pro_Mono',sans-serif] text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
+                  <Link href="/become-affiliate" className="text-[#292827] font-mono text-[14px] leading-[16px] py-2 hover:text-[#23d57c] transition-colors">
                     Become an affiliate
                   </Link>
                 </div>
@@ -144,7 +144,7 @@ export function Footer() {
 
         {/* Copyright */}
         <div className="mt-12 pt-6 border-t border-[#e7e6e2] text-center">
-          <p className="text-[#000000] font-['TT_Interphases_Pro_Mono',sans-serif] text-[12px] leading-[20px] tracking-[0.24px]">
+          <p className="text-[#000000] font-mono text-[12px] leading-[20px] tracking-[0.24px]">
             © 2024 NOVITA AI. ALL RIGHTS RESERVED. 14 ROBINSON ROAD, #02-01, SINGAPORE 048545
           </p>
         </div>
