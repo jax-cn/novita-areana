@@ -90,6 +90,9 @@ COPY coding-agent/pyproject.toml coding-agent/uv.lock ./
 # Install Claude CLI globally (required by claude-agent-sdk)
 RUN npm install -g @anthropic-ai/claude-code
 
+# Install Vercel CLI for deployment
+RUN npm install -g vercel
+
 COPY coding-agent/src ./src
 
 # Set ownership of all files to the non-root user

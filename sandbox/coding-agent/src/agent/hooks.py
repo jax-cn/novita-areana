@@ -1,16 +1,19 @@
 """Claude Agent SDK hooks for event streaming.
 
-These hooks capture tool execution lifecycle events and emit them to the event queue.
+These hooks capture tool execution lifecycle events and emit them to the session.
 Hook events are separate from message content blocks - they capture the execution
 aspect (before/after with timing), while content blocks capture the data aspect.
 """
 
 import time
-from asyncio import Queue
+from typing import TYPE_CHECKING
 
 from claude_agent_sdk import HookContext, HookInput, HookJSONOutput
 
 from ..models.events import AgentEvent, EventType
+
+if TYPE_CHECKING:
+    from ..main import Session
 
 
 class AgentHooks:
@@ -21,8 +24,8 @@ class AgentHooks:
     - PostToolUse: After tool execution (with output and duration)
     """
 
-    def __init__(self, event_queue: Queue, workdir: str):
-        self.event_queue = event_queue
+    def __init__(self, session: "Session", workdir: str):
+        self.session = session
         self.workdir = workdir
         self.tool_start_time: dict[str, float] = {}
 
@@ -51,7 +54,7 @@ class AgentHooks:
                 "tool_use_id": tool_use_id,
             },
         )
-        await self.event_queue.put(event)
+        await self.session.add_event(event)
 
         return {}
 
@@ -83,7 +86,7 @@ class AgentHooks:
                 "duration_ms": duration * 1000,
             },
         )
-        await self.event_queue.put(event)
+        await self.session.add_event(event)
 
         return {}
 
@@ -94,7 +97,7 @@ class AgentHooks:
             timestamp=time.time(),
             data={"message": str(error), "type": type(error).__name__},
         )
-        await self.event_queue.put(event)
+        await self.session.add_event(event)
 
     def _extract_tool_name(self, input_data: HookInput) -> str:
         """Safely extract tool name from HookInput."""

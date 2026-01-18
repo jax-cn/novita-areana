@@ -1,14 +1,14 @@
 'use client';
 
-import { Check, Network, Brush, PlayCircle } from 'lucide-react';
+import { Server, Code, Eye, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StepConfig } from '@/types';
 
 const iconMap = {
   check: Check,
-  'account-tree': Network,
-  brush: Brush,
-  'play-circle': PlayCircle,
+  server: Server,
+  code: Code,
+  eye: Eye,
 };
 
 export function StepIndicator({ steps }: { steps: StepConfig[] }) {
@@ -19,61 +19,55 @@ export function StepIndicator({ steps }: { steps: StepConfig[] }) {
         const isLast = index === steps.length - 1;
 
         return (
-          <div key={index} className={cn('relative pl-12', step.status === 'in-progress' && 'loading-shimmer')}>
+          <div key={index} className="flex gap-4 items-center relative">
+            {/* Connector Line */}
             {!isLast && (
               <div
                 className={cn(
-                  'step-connector absolute left-6 top-10 bottom-[-24px] w-0.5 -translate-x-1/2 z-0',
-                  step.status === 'completed' && 'bg-primary',
-                  step.status === 'in-progress' && 'bg-gradient-to-b from-primary to-muted',
-                  step.status === 'pending' && 'bg-muted'
+                  'absolute left-6 top-12 h-16 w-px -translate-x-1/2 z-0',
+                  step.status === 'completed' && 'bg-[#f4f4f5]',
+                  step.status === 'in-progress' && 'bg-[#f4f4f5]',
+                  step.status === 'pending' && 'bg-[#f4f4f5]'
                 )}
               />
             )}
+            
+            {/* Icon Container */}
             <div
               className={cn(
-                'absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg border z-10',
-                step.status === 'completed' && 'bg-background border-border',
-                step.status === 'in-progress' && 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(35,213,124,0.1)]',
-                step.status === 'pending' && 'bg-background border-border opacity-40'
+                'flex h-12 w-12 items-center justify-center rounded-2xl border shadow-sm z-10 shrink-0',
+                step.status === 'completed' && 'bg-white border-[#e4e4e7]',
+                step.status === 'in-progress' && 'bg-white border-[#e4e4e7] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)]',
+                step.status === 'pending' && 'bg-white border-[#e4e4e7]'
               )}
             >
               <Icon
                 className={cn(
                   'h-5 w-5',
-                  step.status === 'completed' && 'text-primary',
-                  step.status === 'in-progress' && 'text-primary animate-pulse',
-                  step.status === 'pending' && 'text-muted-foreground'
+                  step.status === 'completed' && 'text-[#cbc9c4]',
+                  step.status === 'in-progress' && 'text-[#23d57c]',
+                  step.status === 'pending' && 'text-[#cbc9c4]'
                 )}
               />
             </div>
+            
+            {/* Content Container */}
             <div
               className={cn(
-                'rounded-lg border bg-background p-3',
-                step.status === 'in-progress' && 'border-primary p-4 shadow-lg',
-                step.status !== 'in-progress' && 'border-border'
+                'flex-1 rounded-2xl border bg-white p-4 shadow-sm',
+                step.status === 'in-progress' && 'shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)]',
+                step.status !== 'in-progress' && 'border-[#e4e4e7]'
               )}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className={cn(
-                    'font-medium',
-                    step.status === 'in-progress' && 'text-sm font-bold',
-                    step.status !== 'in-progress' && 'text-sm'
-                  )}
-                >
-                  {step.title}
-                </span>
-              </div>
-              {step.status === 'in-progress' && step.codePreview && (
-                <div className="mt-3 space-y-2 font-mono text-[10px] text-muted-foreground bg-muted p-2 rounded border border-border overflow-hidden">
-                  {step.codePreview.split('\n').map((line, i) => (
-                    <div key={i} className="flex gap-2">
-                      <span dangerouslySetInnerHTML={{ __html: line }} />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <span
+                className={cn(
+                  'text-[16px] font-medium font-[\'TT_Interphases_Pro\']',
+                  step.status === 'in-progress' && 'text-[#4f4e4a]',
+                  step.status !== 'in-progress' && 'text-[#9e9c98]'
+                )}
+              >
+                {step.title}
+              </span>
             </div>
           </div>
         );
